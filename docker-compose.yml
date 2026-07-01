@@ -1,0 +1,31 @@
+services:
+  # Główna baza danych PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: linucb_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: adtech_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Panel administracyjny do przeglądania bazy w przeglądarce
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: linucb_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+# Deklaracja wolumenu, żeby dane nie znikały po wyłączeniu Dockera
+volumes:
+  pgdata:
