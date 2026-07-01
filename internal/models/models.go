@@ -14,8 +14,7 @@ type User struct {
 type Campaign struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
-	Status    string    `json:"status"`
-	Budget    float64   `json:"budget"`
+	Status    string    `json:"status"` // active, paused, completed
 	StartDate time.Time `json:"start_date"`
 	EndDate   time.Time `json:"end_date"`
 	CreatedAt time.Time `json:"created_at"`

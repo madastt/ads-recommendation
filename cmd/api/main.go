@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"paw/internal/handlers"
 
 	"paw/internal/database"
 
@@ -25,6 +26,18 @@ func main() {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Serwer AdTech działa poprawnie!"))
+	})
+
+	campaignHandler := &handlers.CampaignHandler{DB: db}
+
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Serwer AdTech działa poprawnie!"))
+	})
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/campaigns", campaignHandler.CreateCampaign)
+		r.Get("/campaigns", campaignHandler.GetCampaigns)
 	})
 
 	port := ":8080"
