@@ -29,15 +29,19 @@ func main() {
 	})
 
 	campaignHandler := &handlers.CampaignHandler{DB: db}
-
+	adHandler := &handlers.AdHandler{DB: db}
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Serwer AdTech działa poprawnie!"))
 	})
 
+	fs := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/campaigns", campaignHandler.CreateCampaign)
 		r.Get("/campaigns", campaignHandler.GetCampaigns)
+		r.Post("/ads", adHandler.CreateAd)
 	})
 
 	port := ":8080"
