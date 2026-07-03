@@ -27,7 +27,9 @@ import (
 // @securityDefinitions.apiKey  BearerAuth
 // @in                          header
 // @name                        Authorization
-// @description                 Wpisz token w formacie: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk>
+// @description                 Wpisz token w formacie: Bearer <token_jwt>
+//
+// UWAGA: API udostępnia również publiczny kanał WebSocket pod adresem ws://localhost:8080/api/v1/ws
 func main() {
 	db := database.InitDB()
 
@@ -49,6 +51,8 @@ func main() {
 	eventHandler := &handlers.EventHandler{DB: db}
 	authHandler := &handlers.AuthHandler{DB: db}
 
+	go handlers.HandleMessages()
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Serwer AdTech działa poprawnie!"))
@@ -66,6 +70,7 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/events", eventHandler.LogEvent)
+		r.Get("/ws", handlers.HandleWebSocket)
 
 		r.Group(func(r chi.Router) {
 			r.Use(handlers.JWTMiddleware)

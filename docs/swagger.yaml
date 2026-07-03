@@ -292,9 +292,17 @@ paths:
       summary: Zarejestruj zdarzenie (Log)
       tags:
       - events
+  /ws:
+    get:
+      description: Endpoint służący do nasłuchiwania w czasie rzeczywistym na nowe
+        zdarzenia (logi reklam).
+      responses: {}
+      summary: Nawiąż połączenie WebSocket
+      tags:
+      - websockets
 securityDefinitions:
   BearerAuth:
-    description: 'Wpisz token w formacie: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk>'
+    description: 'Wpisz token w formacie: Bearer <token_jwt>'
     in: header
     name: Authorization
     type: apiKey

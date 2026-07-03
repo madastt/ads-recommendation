@@ -354,6 +354,16 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/ws": {
+            "get": {
+                "description": "Endpoint służący do nasłuchiwania w czasie rzeczywistym na nowe zdarzenia (logi reklam).",
+                "tags": [
+                    "websockets"
+                ],
+                "summary": "Nawiąż połączenie WebSocket",
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -452,7 +462,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Wpisz token w formacie: Bearer \u003ceyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk\u003e",
+            "description": "Wpisz token w formacie: Bearer \u003ctoken_jwt\u003e",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

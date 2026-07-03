@@ -54,4 +54,7 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	go func(event models.Event) {
+		Broadcast <- event
+	}(req)
 }
