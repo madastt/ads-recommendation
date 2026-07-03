@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,7 +38,12 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Błąd odczytu pliku z żądania. Upewnij się, że wysyłasz pole 'image'", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
 
 	err = os.MkdirAll("uploads", os.ModePerm)
 	if err != nil {
@@ -53,8 +59,16 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Błąd przy zapisywaniu pliku na dysku", http.StatusInternalServerError)
 		return
 	}
-	defer dst.Close()
-	io.Copy(dst, file)
+	defer func(dst *os.File) {
+		err := dst.Close()
+		if err != nil {
+
+		}
+	}(dst)
+	err, err = io.Copy(dst, file)
+	if err != nil {
+		return
+	}
 
 	imageURL := fmt.Sprintf("/uploads/%s", fileName)
 
@@ -76,7 +90,10 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(ad)
+	err = json.NewEncoder(w).Encode(ad)
+	if err != nil {
+		return
+	}
 }
 
 func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +109,12 @@ func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Błąd podczas pobierania reklam z bazy", http.StatusInternalServerError)
 		return
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
 
 	var ads []models.Ad
 	for rows.Next() {
@@ -110,5 +132,8 @@ func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ads)
+	err = json.NewEncoder(w).Encode(ads)
+	if err != nil {
+		return
+	}
 }

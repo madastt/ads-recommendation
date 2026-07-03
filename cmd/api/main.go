@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,7 +16,12 @@ import (
 func main() {
 	db := database.InitDB()
 
-	defer db.Close()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+
+		}
+	}(db)
 
 	r := chi.NewRouter()
 
@@ -25,7 +31,10 @@ func main() {
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Serwer AdTech działa poprawnie!"))
+		_, err := w.Write([]byte("Serwer AdTech działa poprawnie!"))
+		if err != nil {
+			return
+		}
 	})
 
 	campaignHandler := &handlers.CampaignHandler{DB: db}
@@ -34,7 +43,10 @@ func main() {
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Serwer AdTech działa poprawnie!"))
+		_, err := w.Write([]byte("Serwer AdTech działa poprawnie!"))
+		if err != nil {
+			return
+		}
 	})
 
 	fs := http.FileServer(http.Dir("./uploads"))

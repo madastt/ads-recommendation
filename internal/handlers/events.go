@@ -39,5 +39,8 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(req)
+	err = json.NewEncoder(w).Encode(req)
+	if err != nil {
+		return
+	}
 }
