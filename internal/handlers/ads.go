@@ -19,6 +19,20 @@ type AdHandler struct {
 	DB *sql.DB
 }
 
+// CreateAd obsługuje POST /api/v1/ads
+// @Summary      Dodaj reklamę z banerem
+// @Description  Wgrywa plik graficzny i przypisuje go do kampanii. Zwraca URL obrazka. Wymaga autoryzacji JWT.
+// @Tags         ads
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        campaign_id formData string true "UUID przypisanej kampanii"
+// @Param        context_features formData string true "Cechy kontekstowe JSON (np. celowana grupa wiekowa, urządzenia)"
+// @Param        image formData file true "Plik graficzny banera (.png, .jpg)"
+// @Success      201  {object}  models.Ad "Utworzona reklama ze ścieżką do pliku"
+// @Failure      400  {string}  string "Brakujące pola lub plik jest zbyt duży"
+// @Failure      500  {string}  string "Błąd zapisu na dysku lub w bazie"
+// @Security     BearerAuth
+// @Router       /ads [post]
 func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
@@ -96,6 +110,17 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAdsByCampaign obsługuje GET /api/v1/campaigns/{id}/ads
+// @Summary      Pobierz reklamy dla kampanii
+// @Description  Zwraca wszystkie banery przypisane do konkretnego UUID kampanii. Wymaga autoryzacji JWT.
+// @Tags         ads
+// @Produce      json
+// @Param        id path string true "UUID Kampanii"
+// @Success      200  {array}   models.Ad "Lista reklam"
+// @Failure      400  {string}  string "Brakujące ID kampanii"
+// @Failure      500  {string}  string "Błąd pobierania danych z bazy"
+// @Security     BearerAuth
+// @Router       /campaigns/{id}/ads [get]
 func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
 	campaignID := chi.URLParam(r, "id")
 	if campaignID == "" {

@@ -1,0 +1,258 @@
+basePath: /api/v1
+definitions:
+  handlers.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.Ad:
+    properties:
+      campaign_id:
+        type: string
+      context_features:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+    type: object
+  models.Campaign:
+    properties:
+      created_at:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      start_date:
+        type: string
+      status:
+        description: active, paused, completed
+        type: string
+    type: object
+  models.Event:
+    properties:
+      ad_id:
+        type: string
+      created_at:
+        type: string
+      event_type:
+        type: string
+      id:
+        type: string
+      user_context:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API serwera dla systemu optymalizacji reklam w oparciu o algorytmy
+    Multi-Armed Bandit.
+  termsOfService: http://swagger.io/terms/
+  title: AdTech MzAB Optimization API
+  version: "1.0"
+paths:
+  /ads:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Wgrywa plik graficzny i przypisuje go do kampanii. Zwraca URL obrazka.
+        Wymaga autoryzacji JWT.
+      parameters:
+      - description: UUID przypisanej kampanii
+        in: formData
+        name: campaign_id
+        required: true
+        type: string
+      - description: Cechy kontekstowe JSON (np. celowana grupa wiekowa, urządzenia)
+        in: formData
+        name: context_features
+        required: true
+        type: string
+      - description: Plik graficzny banera (.png, .jpg)
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Utworzona reklama ze ścieżką do pliku
+          schema:
+            $ref: '#/definitions/models.Ad'
+        "400":
+          description: Brakujące pola lub plik jest zbyt duży
+          schema:
+            type: string
+        "500":
+          description: Błąd zapisu na dysku lub w bazie
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Dodaj reklamę z banerem
+      tags:
+      - ads
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Weryfikuje poświadczenia i zwraca token JWT ważny 24 godziny.
+      parameters:
+      - description: Dane logowania (admin / admin123)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Zwraca token JWT
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Niepoprawny format JSON
+          schema:
+            type: string
+        "401":
+          description: Nieprawidłowe dane logowania
+          schema:
+            type: string
+      summary: Logowanie do systemu
+      tags:
+      - auth
+  /campaigns:
+    get:
+      description: Zwraca wszystkie kampanie reklamowe zarejestrowane w bazie danych
+        PostgreSQL.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Campaign'
+            type: array
+        "500":
+          description: Błąd wewnętrzny serwera
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Pobierz listę kampanii
+      tags:
+      - campaigns
+    post:
+      consumes:
+      - application/json
+      description: Dodaje nową kampanię reklamową. Wymaga ważnego tokena JWT.
+      parameters:
+      - description: Dane kampanii (name, start_date, end_date)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Campaign'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Utworzona kampania
+          schema:
+            $ref: '#/definitions/models.Campaign'
+        "400":
+          description: Niepoprawny format JSON
+          schema:
+            type: string
+        "500":
+          description: Błąd zapisu do bazy
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Utwórz nową kampanię
+      tags:
+      - campaigns
+  /campaigns/{id}/ads:
+    get:
+      description: Zwraca wszystkie banery przypisane do konkretnego UUID kampanii.
+        Wymaga autoryzacji JWT.
+      parameters:
+      - description: UUID Kampanii
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista reklam
+          schema:
+            items:
+              $ref: '#/definitions/models.Ad'
+            type: array
+        "400":
+          description: Brakujące ID kampanii
+          schema:
+            type: string
+        "500":
+          description: Błąd pobierania danych z bazy
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Pobierz reklamy dla kampanii
+      tags:
+      - ads
+  /events:
+    post:
+      consumes:
+      - application/json
+      description: Zapisuje wyświetlenie (impression) lub kliknięcie (click). Endpoint
+        publiczny - zbiera dane dla algorytmu LinUCB.
+      parameters:
+      - description: 'Dane zdarzenia (ad_id, event_type: ''impression''/''click'',
+          user_context)'
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Event'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Zapisane zdarzenie
+          schema:
+            $ref: '#/definitions/models.Event'
+        "400":
+          description: Brakujące dane lub niepoprawny event_type
+          schema:
+            type: string
+        "500":
+          description: Błąd zapisu do bazy
+          schema:
+            type: string
+      summary: Zarejestruj zdarzenie (Log)
+      tags:
+      - events
+securityDefinitions:
+  BearerAuth:
+    description: 'Wpisz token w formacie: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

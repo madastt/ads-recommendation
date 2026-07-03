@@ -12,6 +12,17 @@ type EventHandler struct {
 	DB *sql.DB
 }
 
+// LogEvent obsługuje POST /api/v1/events
+// @Summary      Zarejestruj zdarzenie (Log)
+// @Description  Zapisuje wyświetlenie (impression) lub kliknięcie (click). Endpoint publiczny - zbiera dane dla algorytmu LinUCB.
+// @Tags         events
+// @Accept       json
+// @Produce      json
+// @Param        request body models.Event true "Dane zdarzenia (ad_id, event_type: 'impression'/'click', user_context)"
+// @Success      201  {object}  models.Event "Zapisane zdarzenie"
+// @Failure      400  {string}  string "Brakujące dane lub niepoprawny event_type"
+// @Failure      500  {string}  string "Błąd zapisu do bazy"
+// @Router       /events [post]
 func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 	var req models.Event
 

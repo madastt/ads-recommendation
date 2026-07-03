@@ -22,6 +22,17 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+// Login obsługuje uwierzytelnianie administratora
+// @Summary      Logowanie do systemu
+// @Description  Weryfikuje poświadczenia i zwraca token JWT ważny 24 godziny.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body handlers.LoginRequest true "Dane logowania (admin / admin123)"
+// @Success      200  {object}  map[string]string "Zwraca token JWT"
+// @Failure      400  {string}  string "Niepoprawny format JSON"
+// @Failure      401  {string}  string "Nieprawidłowe dane logowania"
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
