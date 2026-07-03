@@ -65,8 +65,8 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 
 		}
 	}(dst)
-	err, err = io.Copy(dst, file)
-	if err != nil {
+	if _, err = io.Copy(dst, file); err != nil {
+		http.Error(w, "Błąd podczas zapisu zawartości pliku na dysk", http.StatusInternalServerError)
 		return
 	}
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"paw/internal/handlers"
 
 	"paw/internal/database"
+	"paw/internal/handlers"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,7 +19,7 @@ func main() {
 	defer func(db *sql.DB) {
 		err := db.Close()
 		if err != nil {
-
+			log.Printf("Błąd podczas zamykania połączenia z bazą danych: %v\n", err)
 		}
 	}(db)
 
@@ -29,22 +29,16 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("Serwer AdTech działa poprawnie!"))
-		if err != nil {
-			return
-		}
-	})
-
 	campaignHandler := &handlers.CampaignHandler{DB: db}
 	adHandler := &handlers.AdHandler{DB: db}
 	eventHandler := &handlers.EventHandler{DB: db}
+	authHandler := &handlers.AuthHandler{DB: db}
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("Serwer AdTech działa poprawnie!"))
 		if err != nil {
+			log.Printf("Błąd podczas wysyłania odpowiedzi healthcheck: %v\n", err)
 			return
 		}
 	})
@@ -53,11 +47,17 @@ func main() {
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Post("/campaigns", campaignHandler.CreateCampaign)
-		r.Get("/campaigns", campaignHandler.GetCampaigns)
-		r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
-		r.Post("/ads", adHandler.CreateAd)
+		r.Post("/auth/login", authHandler.Login)
 		r.Post("/events", eventHandler.LogEvent)
+
+		r.Group(func(r chi.Router) {
+			r.Use(handlers.JWTMiddleware)
+
+			r.Post("/campaigns", campaignHandler.CreateCampaign)
+			r.Get("/campaigns", campaignHandler.GetCampaigns)
+			r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
+			r.Post("/ads", adHandler.CreateAd)
+		})
 	})
 
 	port := ":8080"
