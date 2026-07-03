@@ -1,0 +1,29 @@
+info:
+  name: Create ad
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/v1/ads
+  body:
+    type: multipart-form
+    data:
+      - name: campaign_id
+        type: text
+        value: b3585de0-63b7-44a1-a38c-27a3b1efdb7f
+      - name: context_features
+        type: text
+        value: '{"target_age": "18-25", "device": "mobile"}'
+      - name: image
+        type: file
+        value:
+          - C:\Users\marci\Downloads\lubieptoszki(1).png
+        contentType: image/png
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

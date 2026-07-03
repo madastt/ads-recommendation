@@ -30,6 +30,8 @@ func main() {
 
 	campaignHandler := &handlers.CampaignHandler{DB: db}
 	adHandler := &handlers.AdHandler{DB: db}
+	eventHandler := &handlers.EventHandler{DB: db}
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Serwer AdTech działa poprawnie!"))
@@ -41,7 +43,9 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/campaigns", campaignHandler.CreateCampaign)
 		r.Get("/campaigns", campaignHandler.GetCampaigns)
+		r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
 		r.Post("/ads", adHandler.CreateAd)
+		r.Post("/events", eventHandler.LogEvent)
 	})
 
 	port := ":8080"

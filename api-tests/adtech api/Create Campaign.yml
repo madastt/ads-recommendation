@@ -1,0 +1,23 @@
+info:
+  name: Create Campaign
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://localhost:8080/api/v1/campaigns
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Letnia Kampania 2026",
+        "start_date": "2026-07-05T00:00:00Z",
+        "end_date": "2026-08-31T23:59:59Z"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

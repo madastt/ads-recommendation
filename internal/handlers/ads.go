@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"paw/internal/models"
 	"time"
 
-	"paw/internal/models"
+	"github.com/go-chi/chi/v5"
 )
 
 type AdHandler struct {
@@ -76,4 +77,38 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(ad)
+}
+
+func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
+	campaignID := chi.URLParam(r, "id")
+	if campaignID == "" {
+		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
+		return
+	}
+
+	query := `SELECT id, campaign_id, image_url, context_features, created_at FROM ads WHERE campaign_id = $1`
+	rows, err := h.DB.Query(query, campaignID)
+	if err != nil {
+		http.Error(w, "Błąd podczas pobierania reklam z bazy", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var ads []models.Ad
+	for rows.Next() {
+		var ad models.Ad
+		err := rows.Scan(&ad.ID, &ad.CampaignID, &ad.ImageURL, &ad.ContextFeatures, &ad.CreatedAt)
+		if err != nil {
+			http.Error(w, "Błąd mapowania danych", http.StatusInternalServerError)
+			return
+		}
+		ads = append(ads, ad)
+	}
+
+	if ads == nil {
+		ads = []models.Ad{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ads)
 }
