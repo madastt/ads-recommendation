@@ -35,3 +35,9 @@ type Event struct {
 	UserContext string    `json:"user_context"`
 	CreatedAt   time.Time `json:"created_at"`
 }
+type AdStats struct {
+	AdID        string  `json:"ad_id"`
+	Impressions int     `json:"impressions"`
+	Clicks      int     `json:"clicks"`
+	CTR         float64 `json:"ctr"`
+}

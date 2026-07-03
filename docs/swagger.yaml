@@ -20,6 +20,17 @@ definitions:
       image_url:
         type: string
     type: object
+  models.AdStats:
+    properties:
+      ad_id:
+        type: string
+      clicks:
+        type: integer
+      ctr:
+        type: number
+      impressions:
+        type: integer
+    type: object
   models.Campaign:
     properties:
       created_at:
@@ -55,7 +66,7 @@ info:
   description: REST API serwera dla systemu optymalizacji reklam w oparciu o algorytmy
     Multi-Armed Bandit.
   termsOfService: http://swagger.io/terms/
-  title: AdTech MzAB Optimization API
+  title: AdTech MAB Optimization API
   version: "1.0"
 paths:
   /ads:
@@ -217,6 +228,38 @@ paths:
       summary: Pobierz reklamy dla kampanii
       tags:
       - ads
+  /campaigns/{id}/stats:
+    get:
+      description: Agreguje wyświetlenia i kliknięcia dla wszystkich reklam w kampanii
+        i wylicza CTR. Wymaga autoryzacji JWT.
+      parameters:
+      - description: UUID Kampanii
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Statystyki reklam
+          schema:
+            items:
+              $ref: '#/definitions/models.AdStats'
+            type: array
+        "400":
+          description: Brakujące ID kampanii
+          schema:
+            type: string
+        "500":
+          description: Błąd pobierania danych z bazy
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Pobierz statystyki kampanii
+      tags:
+      - campaigns
   /events:
     post:
       consumes:

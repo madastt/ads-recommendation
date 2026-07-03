@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"paw/internal/models"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type CampaignHandler struct {
@@ -90,6 +92,77 @@ func (h *CampaignHandler) GetCampaigns(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(campaigns)
+	if err != nil {
+		return
+	}
+}
+
+// GetCampaignStats obsługuje GET /api/v1/campaigns/{id}/stats
+// @Summary      Pobierz statystyki kampanii
+// @Description  Agreguje wyświetlenia i kliknięcia dla wszystkich reklam w kampanii i wylicza CTR. Wymaga autoryzacji JWT.
+// @Tags         campaigns
+// @Produce      json
+// @Param        id path string true "UUID Kampanii"
+// @Success      200  {array}   models.AdStats "Statystyki reklam"
+// @Failure      400  {string}  string "Brakujące ID kampanii"
+// @Failure      500  {string}  string "Błąd pobierania danych z bazy"
+// @Security     BearerAuth
+// @Router       /campaigns/{id}/stats [get]
+func (h *CampaignHandler) GetCampaignStats(w http.ResponseWriter, r *http.Request) {
+	campaignID := chi.URLParam(r, "id")
+	if campaignID == "" {
+		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
+		return
+	}
+
+	query := `
+		SELECT 
+			a.id AS ad_id,
+			COUNT(e.id) FILTER (WHERE e.event_type = 'impression') AS impressions,
+			COUNT(e.id) FILTER (WHERE e.event_type = 'click') AS clicks
+		FROM ads a
+		LEFT JOIN events e ON a.id = e.ad_id
+		WHERE a.campaign_id = $1
+		GROUP BY a.id
+	`
+
+	rows, err := h.DB.Query(query, campaignID)
+	if err != nil {
+		http.Error(w, "Błąd podczas agregacji statystyk w bazie", http.StatusInternalServerError)
+		return
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+
+	var statsList []models.AdStats
+
+	for rows.Next() {
+		var stat models.AdStats
+		err := rows.Scan(&stat.AdID, &stat.Impressions, &stat.Clicks)
+		if err != nil {
+			http.Error(w, "Błąd mapowania statystyk", http.StatusInternalServerError)
+			return
+		}
+
+		if stat.Impressions > 0 {
+			stat.CTR = float64(stat.Clicks) / float64(stat.Impressions)
+		} else {
+			stat.CTR = 0.0
+		}
+
+		statsList = append(statsList, stat)
+	}
+
+	if statsList == nil {
+		statsList = []models.AdStats{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(statsList)
 	if err != nil {
 		return
 	}

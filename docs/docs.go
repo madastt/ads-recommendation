@@ -260,6 +260,55 @@ const docTemplate = `{
                 }
             }
         },
+        "/campaigns/{id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Agreguje wyświetlenia i kliknięcia dla wszystkich reklam w kampanii i wylicza CTR. Wymaga autoryzacji JWT.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campaigns"
+                ],
+                "summary": "Pobierz statystyki kampanii",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID Kampanii",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Statystyki reklam",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.AdStats"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Brakujące ID kampanii",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd pobierania danych z bazy",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/events": {
             "post": {
                 "description": "Zapisuje wyświetlenie (impression) lub kliknięcie (click). Endpoint publiczny - zbiera dane dla algorytmu LinUCB.",
@@ -339,6 +388,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.AdStats": {
+            "type": "object",
+            "properties": {
+                "ad_id": {
+                    "type": "string"
+                },
+                "clicks": {
+                    "type": "integer"
+                },
+                "ctr": {
+                    "type": "number"
+                },
+                "impressions": {
+                    "type": "integer"
+                }
+            }
+        },
         "models.Campaign": {
             "type": "object",
             "properties": {
@@ -400,7 +466,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "AdTech MzAB Optimization API",
+	Title:            "AdTech MAB Optimization API",
 	Description:      "REST API serwera dla systemu optymalizacji reklam w oparciu o algorytmy Multi-Armed Bandit.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

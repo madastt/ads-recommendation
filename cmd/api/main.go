@@ -11,8 +11,23 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "paw/docs"
 )
 
+// @title           AdTech MAB Optimization API
+// @version         1.0
+// @description     REST API serwera dla systemu optymalizacji reklam w oparciu o algorytmy Multi-Armed Bandit.
+// @termsOfService  http://swagger.io/terms/
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apiKey  BearerAuth
+// @in                          header
+// @name                        Authorization
+// @description                 Wpisz token w formacie: Bearer <eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk>
 func main() {
 	db := database.InitDB()
 
@@ -46,6 +61,8 @@ func main() {
 	fs := http.FileServer(http.Dir("./uploads"))
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
 
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/events", eventHandler.LogEvent)
@@ -56,6 +73,7 @@ func main() {
 			r.Post("/campaigns", campaignHandler.CreateCampaign)
 			r.Get("/campaigns", campaignHandler.GetCampaigns)
 			r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
+			r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
 			r.Post("/ads", adHandler.CreateAd)
 		})
 	})
