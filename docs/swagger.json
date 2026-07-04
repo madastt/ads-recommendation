@@ -73,6 +73,52 @@
                 }
             }
         },
+        "/ads/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Usuwa powiązane zdarzenia, rekord z bazy oraz fizyczny plik z dysku. Wymaga autoryzacji JWT.",
+                "tags": [
+                    "ads"
+                ],
+                "summary": "Usuń reklamę i jej statystyki",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID Reklamy",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Pomyślnie usunięto"
+                    },
+                    "400": {
+                        "description": "Brakujące ID reklamy",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Reklama nie istnieje",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd serwera",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Weryfikuje poświadczenia i zwraca token JWT ważny 24 godziny.",

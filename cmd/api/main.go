@@ -80,6 +80,7 @@ func main() {
 			r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
 			r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
 			r.Post("/ads", adHandler.CreateAd)
+			r.Delete("/ads/{id}", adHandler.DeleteAd)
 		})
 	})
 

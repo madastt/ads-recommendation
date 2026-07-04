@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"paw/internal/models"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -161,4 +163,57 @@ func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+}
+
+// DeleteAd obsługuje DELETE /api/v1/ads/{id}
+// @Summary      Usuń reklamę i jej statystyki
+// @Description  Usuwa powiązane zdarzenia, rekord z bazy oraz fizyczny plik z dysku. Wymaga autoryzacji JWT.
+// @Tags         ads
+// @Param        id path string true "UUID Reklamy"
+// @Success      204  "Pomyślnie usunięto"
+// @Failure      400  {string}  string "Brakujące ID reklamy"
+// @Failure      404  {string}  string "Reklama nie istnieje"
+// @Failure      500  {string}  string "Błąd serwera"
+// @Security     BearerAuth
+// @Router       /ads/{id} [delete]
+func (h *AdHandler) DeleteAd(w http.ResponseWriter, r *http.Request) {
+	adID := chi.URLParam(r, "id")
+	if adID == "" {
+		http.Error(w, "Brakujące ID reklamy", http.StatusBadRequest)
+		return
+	}
+
+	var imageURL string
+	err := h.DB.QueryRow("SELECT image_url FROM ads WHERE id = $1", adID).Scan(&imageURL)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Reklama nie istnieje", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Błąd podczas odczytu z bazy danych", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = h.DB.Exec("DELETE FROM events WHERE ad_id = $1", adID)
+	if err != nil {
+		http.Error(w, "Błąd podczas czyszczenia powiązanych statystyk", http.StatusInternalServerError)
+		return
+	}
+
+	_, err = h.DB.Exec("DELETE FROM ads WHERE id = $1", adID)
+	if err != nil {
+		http.Error(w, "Błąd podczas usuwania reklamy z bazy", http.StatusInternalServerError)
+		return
+	}
+
+	parts := strings.Split(imageURL, "/")
+	fileName := parts[len(parts)-1]
+
+	if fileName != "" {
+		filePath := filepath.Join("uploads", fileName)
+
+		_ = os.Remove(filePath)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -111,6 +111,36 @@ paths:
       summary: Dodaj reklamę z banerem
       tags:
       - ads
+  /ads/{id}:
+    delete:
+      description: Usuwa powiązane zdarzenia, rekord z bazy oraz fizyczny plik z dysku.
+        Wymaga autoryzacji JWT.
+      parameters:
+      - description: UUID Reklamy
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Pomyślnie usunięto
+        "400":
+          description: Brakujące ID reklamy
+          schema:
+            type: string
+        "404":
+          description: Reklama nie istnieje
+          schema:
+            type: string
+        "500":
+          description: Błąd serwera
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Usuń reklamę i jej statystyki
+      tags:
+      - ads
   /auth/login:
     post:
       consumes:
