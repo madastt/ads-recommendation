@@ -1,20 +1,25 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"paw/internal/models"
+	"paw/internal/pb"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type AdHandler struct {
@@ -216,4 +221,83 @@ func (h *AdHandler) DeleteAd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) {
+	campaignID := chi.URLParam(r, "id")
+	if campaignID == "" {
+		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
+		return
+	}
+	query := `SELECT id, campaign_id, image_url, context_features, created_at FROM ads WHERE campaign_id = $1`
+	rows, err := h.DB.Query(query, campaignID)
+	if err != nil {
+		http.Error(w, "Błąd podczas pobierania reklam", http.StatusInternalServerError)
+		return
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+
+	var ads []models.Ad
+	var adIDs []string
+	for rows.Next() {
+		var ad models.Ad
+		err := rows.Scan(&ad.ID, &ad.CampaignID, &ad.ImageURL, &ad.ContextFeatures, &ad.CreatedAt)
+		if err != nil {
+			return
+		}
+		ads = append(ads, ad)
+		adIDs = append(adIDs, ad.ID)
+	}
+	if len(ads) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode([]models.Ad{})
+		if err != nil {
+			return
+		}
+		return
+	}
+	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Printf("Błąd połączenia gRPC: %v", err)
+		http.Error(w, "Błąd wewnętrzny systemu MAB", http.StatusInternalServerError)
+		return
+	}
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
+
+	client := pb.NewMabEngineClient(conn)
+	req := &pb.DecisionRequest{
+		CampaignId:     campaignID,
+		UserContext:    `{"source": "store", "device": "desktop"}`,
+		AvailableAdIds: adIDs,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	resp, err := client.GetNextAd(ctx, req)
+	if err != nil {
+		log.Printf("Silnik MAB odrzucił zapytanie: %v", err)
+		http.Error(w, "Silnik analityczny nie odpowiedział", http.StatusInternalServerError)
+		return
+	}
+	var chosenAd models.Ad
+	for _, a := range ads {
+		if a.ID == resp.SelectedAdId {
+			chosenAd = a
+			break
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode([]models.Ad{chosenAd})
+	if err != nil {
+		return
+	}
 }

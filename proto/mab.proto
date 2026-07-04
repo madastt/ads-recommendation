@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package mab;
+
+option go_package = "paw/internal/pb";
+
+service MabEngine {
+  rpc GetNextAd (DecisionRequest) returns (DecisionResponse);
+}
+
+message DecisionRequest {
+  string campaign_id = 1;
+  string user_context = 2;
+  repeated string available_ad_ids = 3;
+}
+
+message DecisionResponse {
+  string selected_ad_id = 1;
+}
