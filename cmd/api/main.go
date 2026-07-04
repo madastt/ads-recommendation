@@ -71,7 +71,7 @@ func main() {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/events", eventHandler.LogEvent)
 		r.Get("/ws", handlers.HandleWebSocket)
-
+		r.Get("/public/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
 		r.Group(func(r chi.Router) {
 			r.Use(handlers.JWTMiddleware)
 

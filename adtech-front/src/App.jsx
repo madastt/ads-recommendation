@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Store from './pages/Store';
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('jwt_token');
@@ -15,6 +16,7 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/store" element={<Store />} />
                 <Route
                     path="/"
                     element={
