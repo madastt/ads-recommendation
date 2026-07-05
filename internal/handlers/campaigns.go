@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"paw/internal/models"
 
@@ -166,4 +167,41 @@ func (h *CampaignHandler) GetCampaignStats(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return
 	}
+}
+
+// UpdateCampaign obsługuje PUT /api/v1/campaigns/{id}
+func (h *CampaignHandler) UpdateCampaign(w http.ResponseWriter, r *http.Request) {
+	campaignID := chi.URLParam(r, "id")
+	if campaignID == "" {
+		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
+		return
+	}
+	var payload struct {
+		Name      string `json:"name"`
+		StartDate string `json:"start_date"`
+		EndDate   string `json:"end_date"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, "Niepoprawny format danych JSON", http.StatusBadRequest)
+		return
+	}
+	query := `
+       UPDATE campaigns 
+       SET name = $1, start_date = $2, end_date = $3 
+       WHERE id = $4`
+
+	result, err := h.DB.Exec(query, payload.Name, payload.StartDate, payload.EndDate, campaignID)
+	if err != nil {
+		log.Printf("Błąd podczas aktualizacji kampanii: %v", err)
+		http.Error(w, "Błąd serwera podczas zapisu zmian", http.StatusInternalServerError)
+		return
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err == nil && rowsAffected == 0 {
+		http.Error(w, "Nie znaleziono kampanii do aktualizacji", http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

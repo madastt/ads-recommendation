@@ -15,6 +15,14 @@ export default function Dashboard() {
 
     const [showAdForm, setShowAdForm] = useState(false);
     const [newAd, setNewAd] = useState({ context_features: '{"target_age": "18-25", "device": "desktop"}', image: null });
+    const [editingCampaign, setEditingCampaign] = useState(null);
+
+
+    const formatForInput = (isoString) => {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    };
 
     const fetchCampaigns = () => {
         apiClient.get('/campaigns')
@@ -90,7 +98,24 @@ export default function Dashboard() {
             alert("Błąd podczas tworzenia kampanii: " + (err.response?.data || err.message));
         }
     };
-
+    const handleUpdateCampaign = async (e) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                name: editingCampaign.name,
+                start_date: new Date(editingCampaign.start_date).toISOString(),
+                end_date: new Date(editingCampaign.end_date).toISOString()
+            };
+            await apiClient.put(`/campaigns/${editingCampaign.id}`, payload);
+            fetchCampaigns();
+            setEditingCampaign(null);
+            if (selectedCampaign && selectedCampaign.id === editingCampaign.id) {
+                setSelectedCampaign({ ...selectedCampaign, name: editingCampaign.name });
+            }
+        } catch (err) {
+            alert("Błąd podczas aktualizacji kampanii: " + (err.response?.data || err.message));
+        }
+    };
     const handleCreateAd = async (e) => {
         e.preventDefault();
         if (!selectedCampaign) return alert("Wybierz kampanię z listy!");
@@ -156,9 +181,44 @@ export default function Dashboard() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {campaigns.map(camp => (
-                        <div key={camp.id} onClick={() => setSelectedCampaign(camp)} style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '8px', cursor: 'pointer', background: selectedCampaign?.id === camp.id ? '#e9ecef' : 'white', borderColor: selectedCampaign?.id === camp.id ? '#007bff' : '#ddd' }}>
-                            <strong>{camp.name}</strong>
-                            <div style={{ fontSize: '0.8em', color: '#666', marginTop: '5px' }}>{camp.status}</div>
+                        <div key={camp.id} style={{ border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+                            {editingCampaign?.id !== camp.id ? (
+                                <div
+                                    onClick={() => setSelectedCampaign(camp)}
+                                    style={{ padding: '15px', cursor: 'pointer', background: selectedCampaign?.id === camp.id ? '#e9ecef' : 'white', borderLeft: selectedCampaign?.id === camp.id ? '4px solid #007bff' : '4px solid transparent' }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <strong>{camp.name}</strong>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingCampaign({
+                                                    ...camp,
+                                                    start_date: formatForInput(camp.start_date),
+                                                    end_date: formatForInput(camp.end_date)
+                                                });
+                                            }}
+                                            style={{ background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                                        >
+                                            Edytuj
+                                        </button>
+                                    </div>
+                                    <div style={{ fontSize: '0.8em', color: '#666', marginTop: '5px' }}>{camp.status}</div>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleUpdateCampaign} style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '15px', background: '#fff3cd' }}>
+                                    <input type="text" required value={editingCampaign.name} onChange={e => setEditingCampaign({...editingCampaign, name: e.target.value})} style={{ padding: '8px' }}/>
+                                    <label style={{ fontSize: '0.8em' }}>Nowa data startu:</label>
+                                    <input type="datetime-local" required value={editingCampaign.start_date} onChange={e => setEditingCampaign({...editingCampaign, start_date: e.target.value})} style={{ padding: '8px' }}/>
+                                    <label style={{ fontSize: '0.8em' }}>Nowa data końca:</label>
+                                    <input type="datetime-local" required value={editingCampaign.end_date} onChange={e => setEditingCampaign({...editingCampaign, end_date: e.target.value})} style={{ padding: '8px' }}/>
+
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button type="submit" style={{ flex: 1, padding: '8px', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Zapisz</button>
+                                        <button type="button" onClick={() => setEditingCampaign(null)} style={{ flex: 1, padding: '8px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Anuluj</button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
                     ))}
                 </div>

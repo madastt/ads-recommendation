@@ -100,6 +100,7 @@ func main() {
 
 			r.Post("/campaigns", campaignHandler.CreateCampaign)
 			r.Get("/campaigns", campaignHandler.GetCampaigns)
+			r.Put("/campaigns/{id}", campaignHandler.UpdateCampaign)
 			r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
 			r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
 			r.Post("/ads", adHandler.CreateAd)
