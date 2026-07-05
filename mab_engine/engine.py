@@ -18,6 +18,11 @@ class EpsilonGreedyEngine:
             self.clicks[ad_id] += 1
             print(f"Zarejestrowano KLIKNIĘCIE dla {ad_id[:8]}! (Łącznie: {self.clicks[ad_id]})")
 
+    def hydrate(self, impressions_map, clicks_map):
+        self.impressions = dict(impressions_map)
+        self.clicks = dict(clicks_map)
+        print(f"Zsynchronizowano stan! Reklamy w pamięci: {len(self.impressions)}")
+
     def choose_ad(self, campaign_id, user_context, available_ads):
         if not available_ads:
             return ""

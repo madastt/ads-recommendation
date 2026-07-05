@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	MabEngine_GetNextAd_FullMethodName   = "/mab.MabEngine/GetNextAd"
 	MabEngine_RecordEvent_FullMethodName = "/mab.MabEngine/RecordEvent"
+	MabEngine_SyncState_FullMethodName   = "/mab.MabEngine/SyncState"
 )
 
 // MabEngineClient is the client API for MabEngine service.
@@ -29,6 +30,7 @@ const (
 type MabEngineClient interface {
 	GetNextAd(ctx context.Context, in *DecisionRequest, opts ...grpc.CallOption) (*DecisionResponse, error)
 	RecordEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error)
+	SyncState(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error)
 }
 
 type mabEngineClient struct {
@@ -59,12 +61,23 @@ func (c *mabEngineClient) RecordEvent(ctx context.Context, in *EventRequest, opt
 	return out, nil
 }
 
+func (c *mabEngineClient) SyncState(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SyncResponse)
+	err := c.cc.Invoke(ctx, MabEngine_SyncState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MabEngineServer is the server API for MabEngine service.
 // All implementations must embed UnimplementedMabEngineServer
 // for forward compatibility.
 type MabEngineServer interface {
 	GetNextAd(context.Context, *DecisionRequest) (*DecisionResponse, error)
 	RecordEvent(context.Context, *EventRequest) (*EventResponse, error)
+	SyncState(context.Context, *SyncRequest) (*SyncResponse, error)
 	mustEmbedUnimplementedMabEngineServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedMabEngineServer) GetNextAd(context.Context, *DecisionRequest)
 }
 func (UnimplementedMabEngineServer) RecordEvent(context.Context, *EventRequest) (*EventResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RecordEvent not implemented")
+}
+func (UnimplementedMabEngineServer) SyncState(context.Context, *SyncRequest) (*SyncResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SyncState not implemented")
 }
 func (UnimplementedMabEngineServer) mustEmbedUnimplementedMabEngineServer() {}
 func (UnimplementedMabEngineServer) testEmbeddedByValue()                   {}
@@ -138,6 +154,24 @@ func _MabEngine_RecordEvent_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MabEngine_SyncState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SyncRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MabEngineServer).SyncState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MabEngine_SyncState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MabEngineServer).SyncState(ctx, req.(*SyncRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MabEngine_ServiceDesc is the grpc.ServiceDesc for MabEngine service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var MabEngine_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RecordEvent",
 			Handler:    _MabEngine_RecordEvent_Handler,
+		},
+		{
+			MethodName: "SyncState",
+			Handler:    _MabEngine_SyncState_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -7,6 +7,7 @@ option go_package = "paw/internal/pb";
 service MabEngine {
   rpc GetNextAd (DecisionRequest) returns (DecisionResponse);
   rpc RecordEvent (EventRequest) returns (EventResponse);
+  rpc SyncState (SyncRequest) returns (SyncResponse);
 }
 
 message DecisionRequest {
@@ -27,4 +28,14 @@ message EventRequest {
 
 message EventResponse {
   bool success = 1;
+}
+
+message SyncRequest {
+  map<string, int32> impressions = 1;
+  map<string, int32> clicks = 2;
+}
+
+message SyncResponse {
+  bool success = 1;
+  string message = 2;
 }

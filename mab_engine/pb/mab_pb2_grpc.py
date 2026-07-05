@@ -44,6 +44,11 @@ class MabEngineStub:
                 request_serializer=mab__pb2.EventRequest.SerializeToString,
                 response_deserializer=mab__pb2.EventResponse.FromString,
                 _registered_method=True)
+        self.SyncState = channel.unary_unary(
+                '/mab.MabEngine/SyncState',
+                request_serializer=mab__pb2.SyncRequest.SerializeToString,
+                response_deserializer=mab__pb2.SyncResponse.FromString,
+                _registered_method=True)
 
 
 class MabEngineServicer:
@@ -61,6 +66,12 @@ class MabEngineServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SyncState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_MabEngineServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -73,6 +84,11 @@ def add_MabEngineServicer_to_server(servicer, server):
                     servicer.RecordEvent,
                     request_deserializer=mab__pb2.EventRequest.FromString,
                     response_serializer=mab__pb2.EventResponse.SerializeToString,
+            ),
+            'SyncState': grpc.unary_unary_rpc_method_handler(
+                    servicer.SyncState,
+                    request_deserializer=mab__pb2.SyncRequest.FromString,
+                    response_serializer=mab__pb2.SyncResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -129,6 +145,33 @@ class MabEngine:
             '/mab.MabEngine/RecordEvent',
             mab__pb2.EventRequest.SerializeToString,
             mab__pb2.EventResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SyncState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/mab.MabEngine/SyncState',
+            mab__pb2.SyncRequest.SerializeToString,
+            mab__pb2.SyncResponse.FromString,
             options,
             channel_credentials,
             insecure,

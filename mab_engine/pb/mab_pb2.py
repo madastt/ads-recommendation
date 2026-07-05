@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tmab.proto\x12\x03mab\"V\n\x0f\x44\x65\x63isionRequest\x12\x13\n\x0b\x63\x61mpaign_id\x18\x01 \x01(\t\x12\x14\n\x0cuser_context\x18\x02 \x01(\t\x12\x18\n\x10\x61vailable_ad_ids\x18\x03 \x03(\t\"*\n\x10\x44\x65\x63isionResponse\x12\x16\n\x0eselected_ad_id\x18\x01 \x01(\t\"F\n\x0c\x45ventRequest\x12\x13\n\x0b\x63\x61mpaign_id\x18\x01 \x01(\t\x12\r\n\x05\x61\x64_id\x18\x02 \x01(\t\x12\x12\n\nevent_type\x18\x03 \x01(\t\" \n\rEventResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32{\n\tMabEngine\x12\x38\n\tGetNextAd\x12\x14.mab.DecisionRequest\x1a\x15.mab.DecisionResponse\x12\x34\n\x0bRecordEvent\x12\x11.mab.EventRequest\x1a\x12.mab.EventResponseB\x11Z\x0fpaw/internal/pbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tmab.proto\x12\x03mab\"V\n\x0f\x44\x65\x63isionRequest\x12\x13\n\x0b\x63\x61mpaign_id\x18\x01 \x01(\t\x12\x14\n\x0cuser_context\x18\x02 \x01(\t\x12\x18\n\x10\x61vailable_ad_ids\x18\x03 \x03(\t\"*\n\x10\x44\x65\x63isionResponse\x12\x16\n\x0eselected_ad_id\x18\x01 \x01(\t\"F\n\x0c\x45ventRequest\x12\x13\n\x0b\x63\x61mpaign_id\x18\x01 \x01(\t\x12\r\n\x05\x61\x64_id\x18\x02 \x01(\t\x12\x12\n\nevent_type\x18\x03 \x01(\t\" \n\rEventResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"\xd6\x01\n\x0bSyncRequest\x12\x36\n\x0bimpressions\x18\x01 \x03(\x0b\x32!.mab.SyncRequest.ImpressionsEntry\x12,\n\x06\x63licks\x18\x02 \x03(\x0b\x32\x1c.mab.SyncRequest.ClicksEntry\x1a\x32\n\x10ImpressionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\x1a-\n\x0b\x43licksEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x05:\x02\x38\x01\"0\n\x0cSyncResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2\xad\x01\n\tMabEngine\x12\x38\n\tGetNextAd\x12\x14.mab.DecisionRequest\x1a\x15.mab.DecisionResponse\x12\x34\n\x0bRecordEvent\x12\x11.mab.EventRequest\x1a\x12.mab.EventResponse\x12\x30\n\tSyncState\x12\x10.mab.SyncRequest\x1a\x11.mab.SyncResponseB\x11Z\x0fpaw/internal/pbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,6 +32,10 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'mab_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\017paw/internal/pb'
+  _globals['_SYNCREQUEST_IMPRESSIONSENTRY']._loaded_options = None
+  _globals['_SYNCREQUEST_IMPRESSIONSENTRY']._serialized_options = b'8\001'
+  _globals['_SYNCREQUEST_CLICKSENTRY']._loaded_options = None
+  _globals['_SYNCREQUEST_CLICKSENTRY']._serialized_options = b'8\001'
   _globals['_DECISIONREQUEST']._serialized_start=18
   _globals['_DECISIONREQUEST']._serialized_end=104
   _globals['_DECISIONRESPONSE']._serialized_start=106
@@ -40,6 +44,14 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_EVENTREQUEST']._serialized_end=220
   _globals['_EVENTRESPONSE']._serialized_start=222
   _globals['_EVENTRESPONSE']._serialized_end=254
-  _globals['_MABENGINE']._serialized_start=256
-  _globals['_MABENGINE']._serialized_end=379
+  _globals['_SYNCREQUEST']._serialized_start=257
+  _globals['_SYNCREQUEST']._serialized_end=471
+  _globals['_SYNCREQUEST_IMPRESSIONSENTRY']._serialized_start=374
+  _globals['_SYNCREQUEST_IMPRESSIONSENTRY']._serialized_end=424
+  _globals['_SYNCREQUEST_CLICKSENTRY']._serialized_start=426
+  _globals['_SYNCREQUEST_CLICKSENTRY']._serialized_end=471
+  _globals['_SYNCRESPONSE']._serialized_start=473
+  _globals['_SYNCRESPONSE']._serialized_end=521
+  _globals['_MABENGINE']._serialized_start=524
+  _globals['_MABENGINE']._serialized_end=697
 # @@protoc_insertion_point(module_scope)

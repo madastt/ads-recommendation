@@ -29,6 +29,13 @@ class MabService(mab_pb2_grpc.MabEngineServicer):
         self.engine.update_stats(request.ad_id, request.event_type)
         return mab_pb2.EventResponse(success=True)
 
+    def SyncState(self, request, context):
+        self.engine.hydrate(request.impressions, request.clicks)
+        return mab_pb2.SyncResponse(
+            success=True,
+            message="Pamięć algorytmu została pomyślnie zsynchronizowana"
+        )
+
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

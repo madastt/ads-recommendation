@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"paw/internal/pb"
+	"time"
 
 	"paw/internal/database"
 	"paw/internal/handlers"
@@ -55,6 +57,8 @@ func main() {
 	}(mabConn)
 
 	mabClient := pb.NewMabEngineClient(mabConn)
+
+	hydrateMABState(db, mabClient)
 
 	r := chi.NewRouter()
 
@@ -109,5 +113,51 @@ func main() {
 	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalf("Krytyczny błąd serwera: %v", err)
+	}
+
+}
+func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
+	log.Println("Rozpoczynanie synchronizacji stanu z silnikiem MAB...")
+
+	impressions := make(map[string]int32)
+	clicks := make(map[string]int32)
+
+	query := `SELECT ad_id, event_type, COUNT(*) FROM events GROUP BY ad_id, event_type`
+	rows, err := db.Query(query)
+	if err != nil {
+		log.Printf("Błąd pobierania statystyk do synchronizacji: %v", err)
+		return
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+
+	for rows.Next() {
+		var adID, eventType string
+		var count int32
+		if err := rows.Scan(&adID, &eventType, &count); err != nil {
+			continue
+		}
+		if eventType == "impression" {
+			impressions[adID] = count
+		} else if eventType == "click" {
+			clicks[adID] = count
+		}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	resp, err := client.SyncState(ctx, &pb.SyncRequest{
+		Impressions: impressions,
+		Clicks:      clicks,
+	})
+
+	if err != nil {
+		log.Printf("⚠️ Silnik MAB jest niedostępny. Uruchomi się z pustą pamięcią RAM (Błąd: %v)", err)
+	} else {
+		log.Printf("✅ Pomyślnie zsynchronizowano AI z bazą PostgreSQL! Odpowiedź Pythona: %s", resp.Message)
 	}
 }
