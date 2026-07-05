@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"paw/internal/pb"
 
 	"paw/internal/database"
 	"paw/internal/handlers"
@@ -12,6 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	_ "paw/docs"
 )
@@ -40,6 +43,19 @@ func main() {
 		}
 	}(db)
 
+	mabConn, err := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Krytyczny błąd: nie udało się zainicjalizować klienta gRPC: %v", err)
+	}
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			log.Printf("Błąd podczas zamykania połączenia gRPC: %v\n", err)
+		}
+	}(mabConn)
+
+	mabClient := pb.NewMabEngineClient(mabConn)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -47,7 +63,10 @@ func main() {
 	r.Use(middleware.Recoverer)
 
 	campaignHandler := &handlers.CampaignHandler{DB: db}
-	adHandler := &handlers.AdHandler{DB: db}
+	adHandler := &handlers.AdHandler{
+		DB:        db,
+		MabClient: mabClient,
+	}
 	eventHandler := &handlers.EventHandler{DB: db}
 	authHandler := &handlers.AuthHandler{DB: db}
 
@@ -87,7 +106,7 @@ func main() {
 	port := ":8080"
 	fmt.Printf("Uruchamianie serwera na porcie %s...\n", port)
 
-	err := http.ListenAndServe(port, r)
+	err = http.ListenAndServe(port, r)
 	if err != nil {
 		log.Fatalf("Krytyczny błąd serwera: %v", err)
 	}

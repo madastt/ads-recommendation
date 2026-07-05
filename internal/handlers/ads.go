@@ -18,12 +18,11 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type AdHandler struct {
-	DB *sql.DB
+	DB        *sql.DB
+	MabClient pb.MabEngineClient
 }
 
 // CreateAd obsługuje POST /api/v1/ads
@@ -228,6 +227,7 @@ func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
 		return
 	}
+
 	query := `SELECT id, campaign_id, image_url, context_features, created_at FROM ads WHERE campaign_id = $1`
 	rows, err := h.DB.Query(query, campaignID)
 	if err != nil {
@@ -237,7 +237,6 @@ func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) 
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-
 		}
 	}(rows)
 
@@ -252,6 +251,7 @@ func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) 
 		ads = append(ads, ad)
 		adIDs = append(adIDs, ad.ID)
 	}
+
 	if len(ads) == 0 {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).Encode([]models.Ad{})
@@ -260,32 +260,17 @@ func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Printf("Błąd połączenia gRPC: %v", err)
-		http.Error(w, "Błąd wewnętrzny systemu MAB", http.StatusInternalServerError)
-		return
-	}
-	defer func(conn *grpc.ClientConn) {
-		err := conn.Close()
-		if err != nil {
-
-		}
-	}(conn)
-
-	client := pb.NewMabEngineClient(conn)
 	req := &pb.DecisionRequest{
 		CampaignId:     campaignID,
 		UserContext:    `{"source": "store", "device": "desktop"}`,
 		AvailableAdIds: adIDs,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
-
-	resp, err := client.GetNextAd(ctx, req)
+	resp, err := h.MabClient.GetNextAd(ctx, req)
 	if err != nil {
-		log.Printf("Silnik MAB odrzucił zapytanie: %v", err)
-		http.Error(w, "Silnik analityczny nie odpowiedział", http.StatusInternalServerError)
+		log.Printf("Silnik MAB odrzucił zapytanie (brak odpowiedzi w 250ms): %v", err)
+		http.Error(w, "Silnik analityczny nie odpowiedział na czas", http.StatusInternalServerError)
 		return
 	}
 	var chosenAd models.Ad
