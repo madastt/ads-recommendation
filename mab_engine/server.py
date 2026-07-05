@@ -15,15 +15,19 @@ class MabService(mab_pb2_grpc.MabEngineServicer):
         print("Silnik Epsilon-Greedy podłączony do gniazda.")
 
     def GetNextAd(self, request, context):
-        print(f"\n⚡ Otrzymano żądanie z serwera Go | Kampania: {request.campaign_id}")
+        print(f"\nOtrzymano żądanie z serwera Go | Kampania: {request.campaign_id}")
         selected_ad = self.engine.choose_ad(
             campaign_id=request.campaign_id,
             user_context=request.user_context,
             available_ads=list(request.available_ad_ids)
         )
 
-        print(f"🎯 Zwracam do Reacta reklamę ID: {selected_ad}")
+        print(f"Zwracam do Reacta reklamę ID: {selected_ad}")
         return mab_pb2.DecisionResponse(selected_ad_id=selected_ad)
+
+    def RecordEvent(self, request, context):
+        self.engine.update_stats(request.ad_id, request.event_type)
+        return mab_pb2.EventResponse(success=True)
 
 
 def serve():

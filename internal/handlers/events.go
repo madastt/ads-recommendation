@@ -1,11 +1,18 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
+	"paw/internal/pb"
+	"time"
 
 	"paw/internal/models"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type EventHandler struct {
@@ -48,13 +55,38 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	Broadcast <- req
+
+	go func(adID string, eventType string) {
+		conn, err := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Printf("Błąd połączenia z MAB przy wysyłaniu eventu: %v", err)
+			return
+		}
+		defer func(conn *grpc.ClientConn) {
+			err := conn.Close()
+			if err != nil {
+
+			}
+		}(conn)
+
+		client := pb.NewMabEngineClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		_, err = client.RecordEvent(ctx, &pb.EventRequest{
+			CampaignId: "frontend",
+			AdId:       adID,
+			EventType:  eventType,
+		})
+		if err != nil {
+			log.Printf("Nie udało się powiadomić silnika MAB o evencie: %v", err)
+		}
+	}(req.AdID, req.EventType)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(req)
 	if err != nil {
-		return
+		log.Printf("Błąd wysyłania odpowiedzi JSON: %v", err)
 	}
-	go func(event models.Event) {
-		Broadcast <- event
-	}(req)
 }

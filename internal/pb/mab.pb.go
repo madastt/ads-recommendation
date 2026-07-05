@@ -125,6 +125,110 @@ func (x *DecisionResponse) GetSelectedAdId() string {
 	return ""
 }
 
+type EventRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId    string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	AdId          string                 `protobuf:"bytes,2,opt,name=ad_id,json=adId,proto3" json:"ad_id,omitempty"`
+	EventType     string                 `protobuf:"bytes,3,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventRequest) Reset() {
+	*x = EventRequest{}
+	mi := &file_mab_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventRequest) ProtoMessage() {}
+
+func (x *EventRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mab_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventRequest.ProtoReflect.Descriptor instead.
+func (*EventRequest) Descriptor() ([]byte, []int) {
+	return file_mab_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *EventRequest) GetCampaignId() string {
+	if x != nil {
+		return x.CampaignId
+	}
+	return ""
+}
+
+func (x *EventRequest) GetAdId() string {
+	if x != nil {
+		return x.AdId
+	}
+	return ""
+}
+
+func (x *EventRequest) GetEventType() string {
+	if x != nil {
+		return x.EventType
+	}
+	return ""
+}
+
+type EventResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EventResponse) Reset() {
+	*x = EventResponse{}
+	mi := &file_mab_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EventResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EventResponse) ProtoMessage() {}
+
+func (x *EventResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mab_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EventResponse.ProtoReflect.Descriptor instead.
+func (*EventResponse) Descriptor() ([]byte, []int) {
+	return file_mab_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *EventResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_mab_proto protoreflect.FileDescriptor
 
 const file_mab_proto_rawDesc = "" +
@@ -136,9 +240,18 @@ const file_mab_proto_rawDesc = "" +
 	"\fuser_context\x18\x02 \x01(\tR\vuserContext\x12(\n" +
 	"\x10available_ad_ids\x18\x03 \x03(\tR\x0eavailableAdIds\"8\n" +
 	"\x10DecisionResponse\x12$\n" +
-	"\x0eselected_ad_id\x18\x01 \x01(\tR\fselectedAdId2E\n" +
+	"\x0eselected_ad_id\x18\x01 \x01(\tR\fselectedAdId\"c\n" +
+	"\fEventRequest\x12\x1f\n" +
+	"\vcampaign_id\x18\x01 \x01(\tR\n" +
+	"campaignId\x12\x13\n" +
+	"\x05ad_id\x18\x02 \x01(\tR\x04adId\x12\x1d\n" +
+	"\n" +
+	"event_type\x18\x03 \x01(\tR\teventType\")\n" +
+	"\rEventResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess2{\n" +
 	"\tMabEngine\x128\n" +
-	"\tGetNextAd\x12\x14.mab.DecisionRequest\x1a\x15.mab.DecisionResponseB\x11Z\x0fpaw/internal/pbb\x06proto3"
+	"\tGetNextAd\x12\x14.mab.DecisionRequest\x1a\x15.mab.DecisionResponse\x124\n" +
+	"\vRecordEvent\x12\x11.mab.EventRequest\x1a\x12.mab.EventResponseB\x11Z\x0fpaw/internal/pbb\x06proto3"
 
 var (
 	file_mab_proto_rawDescOnce sync.Once
@@ -152,16 +265,20 @@ func file_mab_proto_rawDescGZIP() []byte {
 	return file_mab_proto_rawDescData
 }
 
-var file_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_mab_proto_goTypes = []any{
 	(*DecisionRequest)(nil),  // 0: mab.DecisionRequest
 	(*DecisionResponse)(nil), // 1: mab.DecisionResponse
+	(*EventRequest)(nil),     // 2: mab.EventRequest
+	(*EventResponse)(nil),    // 3: mab.EventResponse
 }
 var file_mab_proto_depIdxs = []int32{
 	0, // 0: mab.MabEngine.GetNextAd:input_type -> mab.DecisionRequest
-	1, // 1: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: mab.MabEngine.RecordEvent:input_type -> mab.EventRequest
+	1, // 2: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
+	3, // 3: mab.MabEngine.RecordEvent:output_type -> mab.EventResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -178,7 +295,7 @@ func file_mab_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mab_proto_rawDesc), len(file_mab_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

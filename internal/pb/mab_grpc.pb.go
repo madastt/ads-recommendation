@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MabEngine_GetNextAd_FullMethodName = "/mab.MabEngine/GetNextAd"
+	MabEngine_GetNextAd_FullMethodName   = "/mab.MabEngine/GetNextAd"
+	MabEngine_RecordEvent_FullMethodName = "/mab.MabEngine/RecordEvent"
 )
 
 // MabEngineClient is the client API for MabEngine service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MabEngineClient interface {
 	GetNextAd(ctx context.Context, in *DecisionRequest, opts ...grpc.CallOption) (*DecisionResponse, error)
+	RecordEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error)
 }
 
 type mabEngineClient struct {
@@ -47,11 +49,22 @@ func (c *mabEngineClient) GetNextAd(ctx context.Context, in *DecisionRequest, op
 	return out, nil
 }
 
+func (c *mabEngineClient) RecordEvent(ctx context.Context, in *EventRequest, opts ...grpc.CallOption) (*EventResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EventResponse)
+	err := c.cc.Invoke(ctx, MabEngine_RecordEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MabEngineServer is the server API for MabEngine service.
 // All implementations must embed UnimplementedMabEngineServer
 // for forward compatibility.
 type MabEngineServer interface {
 	GetNextAd(context.Context, *DecisionRequest) (*DecisionResponse, error)
+	RecordEvent(context.Context, *EventRequest) (*EventResponse, error)
 	mustEmbedUnimplementedMabEngineServer()
 }
 
@@ -64,6 +77,9 @@ type UnimplementedMabEngineServer struct{}
 
 func (UnimplementedMabEngineServer) GetNextAd(context.Context, *DecisionRequest) (*DecisionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetNextAd not implemented")
+}
+func (UnimplementedMabEngineServer) RecordEvent(context.Context, *EventRequest) (*EventResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordEvent not implemented")
 }
 func (UnimplementedMabEngineServer) mustEmbedUnimplementedMabEngineServer() {}
 func (UnimplementedMabEngineServer) testEmbeddedByValue()                   {}
@@ -104,6 +120,24 @@ func _MabEngine_GetNextAd_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MabEngine_RecordEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MabEngineServer).RecordEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MabEngine_RecordEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MabEngineServer).RecordEvent(ctx, req.(*EventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MabEngine_ServiceDesc is the grpc.ServiceDesc for MabEngine service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var MabEngine_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetNextAd",
 			Handler:    _MabEngine_GetNextAd_Handler,
+		},
+		{
+			MethodName: "RecordEvent",
+			Handler:    _MabEngine_RecordEvent_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
