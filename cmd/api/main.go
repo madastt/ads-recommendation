@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"paw/docs"
 	"paw/internal/pb"
 	"time"
 
@@ -18,8 +19,6 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	_ "paw/docs"
 )
 
 // @title           AdTech MAB Optimization API
@@ -37,6 +36,8 @@ import (
 //
 // UWAGA: API udostępnia również publiczny kanał WebSocket pod adresem ws://localhost:8080/api/v1/ws
 func main() {
+	docs.SwaggerInfo.Host = "localhost:8443"
+	docs.SwaggerInfo.Schemes = []string{"https"}
 	db := database.InitDB()
 
 	defer func(db *sql.DB) {

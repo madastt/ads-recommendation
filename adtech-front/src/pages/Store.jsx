@@ -47,7 +47,7 @@ export default function Store() {
         };
 
         loadStoreAd();
-        const ws = new WebSocket('ws://localhost:8080/api/v1/ws');
+        const ws = new WebSocket(`wss://${window.location.host}/api/v1/ws`);
         wsRef.current = ws;
 
         ws.onopen = () => console.log('Sklep połączony ze strumieniem WebSocket');

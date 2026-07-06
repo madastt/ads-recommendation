@@ -41,8 +41,8 @@ services:
     build: .
     container_name: linucb_go
     restart: always
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     volumes:
       - ./uploads:/app/uploads
     depends_on:
@@ -67,14 +67,13 @@ services:
   frontend:
     build: ./adtech-front
     container_name: linucb_react
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
     volumes:
-      # Podmontowanie kodu, żeby zmiany na żywo od razu działały w kontenerze
       - ./adtech-front:/app
       - /app/node_modules
     environment:
-      - CHOKIDAR_USEPOLLING=true # Wymusza odświeżanie plików (Hot Reload) na Windowsie
+      - CHOKIDAR_USEPOLLING=true
 
 # Deklaracja wolumenu, żeby dane nie znikały po wyłączeniu Dockera
 volumes:
