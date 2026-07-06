@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Store from './pages/Store';
+import ApiDashboard from "./pages/ApiDashboard.jsx";
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('jwt_token');
@@ -17,6 +18,7 @@ export default function App() {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/store" element={<Store />} />
+                <Route path="/admin/stats" element={<ApiDashboard />} />
                 <Route
                     path="/"
                     element={

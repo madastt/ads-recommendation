@@ -11,6 +11,7 @@ import (
 
 	"paw/internal/database"
 	"paw/internal/handlers"
+	localmw "paw/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -65,6 +66,9 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(localmw.APILogger(db))
+
+	statsHandler := &handlers.StatsHandler{DB: db}
 
 	campaignHandler := &handlers.CampaignHandler{DB: db}
 	adHandler := &handlers.AdHandler{
@@ -101,7 +105,7 @@ func main() {
 		r.Get("/public/campaigns/{id}/ads", adHandler.GetPublicAdDecision)
 		r.Group(func(r chi.Router) {
 			r.Use(handlers.JWTMiddleware)
-
+			r.Get("/admin/stats/api", statsHandler.GetAPIStats)
 			r.Post("/campaigns", campaignHandler.CreateCampaign)
 			r.Get("/campaigns", campaignHandler.GetCampaigns)
 			r.Put("/campaigns/{id}", campaignHandler.UpdateCampaign)

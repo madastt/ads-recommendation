@@ -94,11 +94,22 @@ export default function Store() {
                     <p style={{ color: '#888' }}>Pobieranie dopasowanej oferty...</p>
                 ) : ad ? (
                     <div onClick={handleAdClick} style={{ display: 'block', cursor: 'pointer' }}>
-                        <div style={{ maxWidth: '728px', margin: '0 auto', border: '1px solid #ddd', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{
+                            maxWidth: '728px',
+                            height: '200px',
+                            margin: '0 auto',
+                            overflow: 'hidden',
+                            background: '#ffffff'
+                        }}>
                             <img
                                 src={ad.image_url}
                                 alt="Sponsorowana oferta"
-                                style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '200px', objectFit: 'cover' }}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    display: 'block'
+                                }}
                             />
                         </div>
                         <small style={{ color: '#aaa', display: 'block', marginTop: '5px' }}>Reklama sponsorowana</small>

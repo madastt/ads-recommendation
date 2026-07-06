@@ -28,6 +28,17 @@ CREATE TABLE IF NOT EXISTS events (
     user_context JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+CREATE TABLE IF NOT EXISTS api_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    method VARCHAR(10) NOT NULL,
+    path VARCHAR(255) NOT NULL,
+    status_code INTEGER NOT NULL,
+    latency_ms INTEGER NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_api_logs_path ON api_logs(path);
+CREATE INDEX IF NOT EXISTS idx_api_logs_created_at ON api_logs(created_at);
 INSERT INTO users (username, password_hash)
 VALUES ('admin', crypt('admin123', gen_salt('bf')))
 ON CONFLICT (username) DO NOTHING;

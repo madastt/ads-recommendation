@@ -169,7 +169,21 @@ export default function Dashboard() {
                         Wyloguj
                     </button>
                 </div>
-
+                <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #ddd' }}>
+                    <h3 style={{ marginTop: 0, fontSize: '1rem', color: '#666' }}>Nawigacja Systemowa</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <button
+                            onClick={() => navigate('/admin/stats')}
+                            style={{ padding: '10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontWeight: 'bold' }}>
+                            📊 Obserwowalność API
+                        </button>
+                        <button
+                            onClick={() => window.open('/store', '_blank')}
+                            style={{ padding: '10px', background: '#6366f1', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', textAlign: 'left', fontWeight: 'bold' }}>
+                            🛒 Otwórz Sklep (Nowa karta)
+                        </button>
+                    </div>
+                </div>
                 <button onClick={() => setShowCampaignForm(!showCampaignForm)} style={{ width: '100%', padding: '10px', margin: '10px 0', background: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                     {showCampaignForm ? "Anuluj" : "+ Nowa Kampania"}
                 </button>
