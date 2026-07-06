@@ -49,6 +49,20 @@ services:
       - db
       - mab-engine
 
+  # Odwrotne Proxy (Terminacja SSL)
+  caddy:
+    image: caddy:2-alpine
+    container_name: linucb_caddy
+    restart: always
+    ports:
+      - "8443:443" # Otwieramy port HTTPS na zewnątrz
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
   # Środowisko deweloperskie React (Vite)
   frontend:
     build: ./adtech-front
@@ -65,3 +79,5 @@ services:
 # Deklaracja wolumenu, żeby dane nie znikały po wyłączeniu Dockera
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
