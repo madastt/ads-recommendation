@@ -9,7 +9,7 @@ import (
 )
 
 func InitDB() *sql.DB {
-	host := "localhost"
+	host := "db"
 	port := 5432
 	user := "admin"
 	password := "secretpassword"

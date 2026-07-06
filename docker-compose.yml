@@ -25,6 +25,39 @@ services:
       - "5050:80"
     depends_on:
       - db
+  # Silnik AI w Pythonie
+  mab-engine:
+    build: ./mab_engine
+    container_name: linucb_python
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "50051:50051"
+
+  # Główny serwer backendowy Go
+  api:
+    build: .
+    container_name: linucb_go
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - mab-engine
+
+  # Środowisko deweloperskie React (Vite)
+  frontend:
+    build: ./adtech-front
+    container_name: linucb_react
+    ports:
+      - "5173:5173"
+    volumes:
+      # Podmontowanie kodu, żeby zmiany na żywo od razu działały w kontenerze
+      - ./adtech-front:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Wymusza odświeżanie plików (Hot Reload) na Windowsie
 
 # Deklaracja wolumenu, żeby dane nie znikały po wyłączeniu Dockera
 volumes:

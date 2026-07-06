@@ -8,7 +8,7 @@ http:
   url: http://localhost:8080/api/v1/campaigns
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMxNzAxNjAsInVzZXJuYW1lIjoiYWRtaW4ifQ.S8gvEdQ_g485Z2O742okY1197OPn3onfbmLdtnlrVUk
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODMzMzc1MTEsInVzZXJuYW1lIjoiYWRtaW4ifQ.BY-WfyMg7Coo02uMLEgptc80c67UG6RBUtA_mpCf5ck
 
 settings:
   encodeUrl: true

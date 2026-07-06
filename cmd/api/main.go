@@ -45,7 +45,7 @@ func main() {
 		}
 	}(db)
 
-	mabConn, err := grpc.NewClient("127.0.0.1:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	mabConn, err := grpc.NewClient("mab-engine:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Krytyczny błąd: nie udało się zainicjalizować klienta gRPC: %v", err)
 	}
@@ -71,7 +71,10 @@ func main() {
 		DB:        db,
 		MabClient: mabClient,
 	}
-	eventHandler := &handlers.EventHandler{DB: db}
+	eventHandler := &handlers.EventHandler{
+		DB:        db,
+		MabClient: mabClient,
+	}
 	authHandler := &handlers.AuthHandler{DB: db}
 
 	go handlers.HandleMessages()
@@ -157,8 +160,8 @@ func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
 	})
 
 	if err != nil {
-		log.Printf("⚠️ Silnik MAB jest niedostępny. Uruchomi się z pustą pamięcią RAM (Błąd: %v)", err)
+		log.Printf("Silnik MAB jest niedostępny. Uruchomi się z pustą pamięcią RAM (Błąd: %v)", err)
 	} else {
-		log.Printf("✅ Pomyślnie zsynchronizowano AI z bazą PostgreSQL! Odpowiedź Pythona: %s", resp.Message)
+		log.Printf("Pomyślnie zsynchronizowano AI z bazą PostgreSQL! Odpowiedź Pythona: %s", resp.Message)
 	}
 }
