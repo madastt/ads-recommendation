@@ -35,14 +35,16 @@ class EpsilonGreedyEngine:
         if random.random() < self.epsilon:
             print(f"[{campaign_id}]Eksploracja (Epsilon): Losuję baner.")
             return random.choice(available_ads)
-        best_ad = available_ads[0]
-        max_ctr = -1.0
 
-        for ad in available_ads:
-            ctr = (self.clicks[ad] / self.impressions[ad]) if self.impressions[ad] > 0 else 0.0
-            if ctr > max_ctr:
-                max_ctr = ctr
-                best_ad = ad
+        ctrs = {
+            ad: (self.clicks[ad] / self.impressions[ad]) if self.impressions[ad] > 0 else 0.0
+            for ad in available_ads
+        }
+        max_ctr = max(ctrs.values())
+        leaders = [ad for ad, ctr in ctrs.items() if ctr == max_ctr]
 
-        print(f"[{campaign_id}]Eksploatacja: Wybieram lidera {best_ad[:8]}... (CTR: {max_ctr:.2%})")
+        best_ad = random.choice(leaders)
+
+        print(f"[{campaign_id}]Eksploatacja: Wybieram lidera {best_ad[:8]}... "
+              f"(CTR: {max_ctr:.2%}, remisujących liderów: {len(leaders)})")
         return best_ad

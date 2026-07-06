@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"paw/internal/models"
@@ -46,6 +47,12 @@ func (h *CampaignHandler) CreateCampaign(w http.ResponseWriter, r *http.Request)
 	}
 
 	req.Status = "active"
+
+	Broadcast <- map[string]interface{}{
+		"type":    "campaign_created",
+		"payload": req,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(req)
@@ -93,6 +100,43 @@ func (h *CampaignHandler) GetCampaigns(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(campaigns)
+	if err != nil {
+		return
+	}
+}
+
+// GetActiveCampaign obsługuje GET /api/v1/public/campaigns/active
+// @Summary      Pobierz aktualnie aktywną kampanię (publiczne)
+// @Description  Zwraca najnowszą kampanię ze statusem "active". Używane przez sklep, żeby automatycznie
+// @Description  wyświetlać reklamy z bieżącej kampanii bez znajomości jej UUID.
+// @Tags         campaigns
+// @Produce      json
+// @Success      200  {object}  models.Campaign
+// @Failure      404  {string}  string "Brak aktywnej kampanii"
+// @Failure      500  {string}  string "Błąd wewnętrzny serwera"
+// @Router       /public/campaigns/active [get]
+func (h *CampaignHandler) GetActiveCampaign(w http.ResponseWriter, r *http.Request) {
+	var c models.Campaign
+
+	query := `
+		SELECT id, name, status, start_date, end_date, created_at 
+		FROM campaigns 
+		WHERE status = 'active' 
+		ORDER BY created_at DESC 
+		LIMIT 1`
+
+	err := h.DB.QueryRow(query).Scan(&c.ID, &c.Name, &c.Status, &c.StartDate, &c.EndDate, &c.CreatedAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "Brak aktywnej kampanii", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Błąd podczas pobierania aktywnej kampanii", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(c)
 	if err != nil {
 		return
 	}
@@ -170,6 +214,18 @@ func (h *CampaignHandler) GetCampaignStats(w http.ResponseWriter, r *http.Reques
 }
 
 // UpdateCampaign obsługuje PUT /api/v1/campaigns/{id}
+// @Summary      Aktualizuj istniejącą kampanię
+// @Description  Modyfikuje parametry istniejącej kampanii (nazwę oraz ramy czasowe). Wymaga ważnego tokena JWT.
+// @Tags         campaigns
+// @Accept       json
+// @Param        id path string true "UUID Kampanii"
+// @Param        request body models.Campaign true "Nowe dane kampanii (wymagane: name, start_date, end_date)"
+// @Success      204  "Pomyślnie zaktualizowano (Brak zawartości)"
+// @Failure      400  {string}  string "Brakujące ID kampanii lub niepoprawny format JSON"
+// @Failure      404  {string}  string "Nie znaleziono kampanii do aktualizacji"
+// @Failure      500  {string}  string "Błąd wewnętrzny serwera"
+// @Security     BearerAuth
+// @Router       /campaigns/{id} [put]
 func (h *CampaignHandler) UpdateCampaign(w http.ResponseWriter, r *http.Request) {
 	campaignID := chi.URLParam(r, "id")
 	if campaignID == "" {

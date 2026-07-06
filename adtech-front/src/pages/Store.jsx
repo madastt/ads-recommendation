@@ -5,38 +5,64 @@ export default function Store() {
     const [ad, setAd] = useState(null);
     const [loading, setLoading] = useState(true);
     const effectRan = useRef(false);
+    const wsRef = useRef(null);
+    const shownAdIdRef = useRef(null);
 
     const publicApi = axios.create({ baseURL: '/api/v1' });
 
-    const TEST_CAMPAIGN_ID = "b3585de0-63b7-44a1-a38c-27a3b1efdb7f";
-
     useEffect(() => {
         if (effectRan.current === true) return;
+
         const loadStoreAd = async () => {
             try {
-                const response = await publicApi.get(`/public/campaigns/${TEST_CAMPAIGN_ID}/ads`);
+                const activeCampaignRes = await publicApi.get('/public/campaigns/active');
+                const activeCampaignId = activeCampaignRes.data.id;
+
+                const response = await publicApi.get(`/public/campaigns/${activeCampaignId}/ads`);
                 const availableAds = response.data || [];
 
                 if (availableAds.length > 0) {
                     const selectedAd = availableAds[0];
                     setAd(selectedAd);
-                    await publicApi.post('/events', {
-                        ad_id: selectedAd.id,
-                        event_type: 'impression',
-                        user_context: '{"source": "store", "device": "desktop"}'
-                    });
-                    console.log("Zalogowano wyświetlenie reklamy:", selectedAd.id);
+                    if (shownAdIdRef.current !== selectedAd.id) {
+                        shownAdIdRef.current = selectedAd.id;
+                        publicApi.post('/events', {
+                            ad_id: selectedAd.id,
+                            event_type: 'impression',
+                            user_context: '{"source": "store", "device": "desktop"}'
+                        }).then(() => console.log("Zalogowano wyświetlenie reklamy:", selectedAd.id))
+                            .catch(err => console.error("Nie udało się zalogować wyświetlenia:", err));
+                    }
+                } else {
+                    shownAdIdRef.current = null;
+                    setAd(null);
                 }
             } catch (err) {
                 console.error("Brak dostępnych reklam dla sklepu lub błąd konfiguracji publicznej.", err);
+                shownAdIdRef.current = null;
+                setAd(null);
             } finally {
                 setLoading(false);
             }
         };
 
         loadStoreAd();
+        const ws = new WebSocket('ws://localhost:8080/api/v1/ws');
+        wsRef.current = ws;
+
+        ws.onopen = () => console.log('Sklep połączony ze strumieniem WebSocket');
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'campaign_created' || msg.type === 'ad_created' || msg.type === 'ad_deleted') {
+                console.log(`Wykryto zmianę (${msg.type}), odświeżam ofertę sklepu...`);
+                loadStoreAd();
+            }
+        };
+        ws.onerror = (err) => console.error('Błąd połączenia WebSocket w sklepie:', err);
+
         return () => {
             effectRan.current = true;
+            if (wsRef.current) wsRef.current.close();
         };
     }, []);
     const handleAdClick = async (e) => {

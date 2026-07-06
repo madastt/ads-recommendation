@@ -108,6 +108,11 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	ad.ImageURL = imageURL
 	ad.ContextFeatures = contextFeatures
 
+	Broadcast <- map[string]interface{}{
+		"type":    "ad_created",
+		"payload": ad,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(ad)
@@ -217,6 +222,11 @@ func (h *AdHandler) DeleteAd(w http.ResponseWriter, r *http.Request) {
 		filePath := filepath.Join("uploads", fileName)
 
 		_ = os.Remove(filePath)
+	}
+
+	Broadcast <- map[string]interface{}{
+		"type":    "ad_deleted",
+		"payload": map[string]string{"ad_id": adID},
 	}
 
 	w.WriteHeader(http.StatusNoContent)

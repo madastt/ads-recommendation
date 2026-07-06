@@ -53,7 +53,10 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Broadcast <- req
+	Broadcast <- map[string]interface{}{
+		"type":    "event",
+		"payload": req,
+	}
 
 	go func(adID string, eventType string) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)

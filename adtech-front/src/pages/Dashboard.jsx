@@ -64,7 +64,13 @@ export default function Dashboard() {
         wsRef.current = ws;
         ws.onopen = () => console.log('🟢 Połączono ze strumieniem WebSocket');
         ws.onmessage = (event) => {
-            const newEvent = JSON.parse(event.data);
+            const msg = JSON.parse(event.data);
+
+            // Backend wysyła teraz różne typy wiadomości (event, campaign_created, ad_created, ad_deleted).
+            // Dashboard aktualizuje statystyki tylko dla wiadomości typu "event".
+            if (msg.type !== 'event') return;
+
+            const newEvent = msg.payload;
             setStats(prevStats => {
                 const currentAdStats = prevStats[newEvent.ad_id] || { impressions: 0, clicks: 0, ctr: 0 };
                 const newImpressions = currentAdStats.impressions + (newEvent.event_type === 'impression' ? 1 : 0);

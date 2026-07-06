@@ -12,6 +12,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   # Panel administracyjny do przeglądania bazy w przeglądarce
   pgadmin:
@@ -42,6 +43,8 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       - db
       - mab-engine
