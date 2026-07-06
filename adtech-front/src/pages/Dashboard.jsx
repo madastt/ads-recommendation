@@ -60,9 +60,9 @@ export default function Dashboard() {
 
         fetchDetails();
 
-        const ws = new WebSocket('ws://localhost:8080/api/v1/ws');
+        const ws = new WebSocket(`wss://${window.location.host}/api/v1/ws`);
         wsRef.current = ws;
-        ws.onopen = () => console.log('🟢 Połączono ze strumieniem WebSocket');
+        ws.onopen = () => console.log('Połączono ze strumieniem WebSocket');
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
 
