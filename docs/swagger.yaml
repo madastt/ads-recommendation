@@ -226,6 +226,73 @@ paths:
       summary: Utwórz nową kampanię
       tags:
       - campaigns
+  /campaigns/{id}:
+    delete:
+      description: Zmienia status kampanii na 'archived', chroniąc historię statystyk
+        reklam.
+      parameters:
+      - description: UUID Kampanii
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Pomyślnie zarchiwizowano (Brak zawartości)
+        "400":
+          description: Brakujące ID kampanii
+          schema:
+            type: string
+        "404":
+          description: Nie znaleziono kampanii lub już zarchiwizowana
+          schema:
+            type: string
+        "500":
+          description: Błąd wewnętrzny serwera
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Zarchiwizuj kampanię (Soft Delete)
+      tags:
+      - campaigns
+    put:
+      consumes:
+      - application/json
+      description: Modyfikuje parametry istniejącej kampanii (nazwę oraz ramy czasowe).
+        Wymaga ważnego tokena JWT.
+      parameters:
+      - description: UUID Kampanii
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Nowe dane kampanii (wymagane: name, start_date, end_date)'
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.Campaign'
+      responses:
+        "204":
+          description: Pomyślnie zaktualizowano (Brak zawartości)
+        "400":
+          description: Brakujące ID kampanii lub niepoprawny format JSON
+          schema:
+            type: string
+        "404":
+          description: Nie znaleziono kampanii do aktualizacji
+          schema:
+            type: string
+        "500":
+          description: Błąd wewnętrzny serwera
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Aktualizuj istniejącą kampanię
+      tags:
+      - campaigns
   /campaigns/{id}/ads:
     get:
       description: Zwraca wszystkie banery przypisane do konkretnego UUID kampanii.
@@ -322,6 +389,29 @@ paths:
       summary: Zarejestruj zdarzenie (Log)
       tags:
       - events
+  /public/campaigns/active:
+    get:
+      description: |-
+        Zwraca najnowszą kampanię ze statusem "active". Używane przez sklep, żeby automatycznie
+        wyświetlać reklamy z bieżącej kampanii bez znajomości jej UUID.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Campaign'
+        "404":
+          description: Brak aktywnej kampanii
+          schema:
+            type: string
+        "500":
+          description: Błąd wewnętrzny serwera
+          schema:
+            type: string
+      summary: Pobierz aktualnie aktywną kampanię (publiczne)
+      tags:
+      - campaigns
   /ws:
     get:
       description: Endpoint służący do nasłuchiwania w czasie rzeczywistym na nowe

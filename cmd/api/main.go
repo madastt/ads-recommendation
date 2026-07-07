@@ -7,12 +7,12 @@ import (
 	"log"
 	"net/http"
 	"paw/docs"
+	localmw "paw/internal/middleware"
 	"paw/internal/pb"
 	"time"
 
 	"paw/internal/database"
 	"paw/internal/handlers"
-	localmw "paw/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -64,10 +64,13 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(localmw.APILogger(db))
+	r.Get("/api/v1/ws", handlers.HandleWebSocket)
+
+	apiRouter := chi.NewRouter()
+	apiRouter.Use(middleware.RequestID)
+	apiRouter.Use(middleware.Logger)
+	apiRouter.Use(middleware.Recoverer)
+	apiRouter.Use(localmw.APILogger(db))
 
 	statsHandler := &handlers.StatsHandler{DB: db}
 
@@ -93,15 +96,9 @@ func main() {
 		}
 	})
 
-	fs := http.FileServer(http.Dir("./uploads"))
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
-
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
-
-	r.Route("/api/v1", func(r chi.Router) {
+	apiRouter.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/events", eventHandler.LogEvent)
-		r.Get("/ws", handlers.HandleWebSocket)
 		r.Get("/public/campaigns/active", campaignHandler.GetActiveCampaign)
 		r.Get("/public/campaigns/{id}/ads", adHandler.GetPublicAdDecision)
 		r.Group(func(r chi.Router) {
@@ -114,8 +111,15 @@ func main() {
 			r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
 			r.Post("/ads", adHandler.CreateAd)
 			r.Delete("/ads/{id}", adHandler.DeleteAd)
+			r.Delete("/campaigns/{id}", campaignHandler.DeleteCampaign)
 		})
 	})
+
+	r.Mount("/", apiRouter)
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+	fs := http.FileServer(http.Dir("./uploads"))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
 
 	port := ":8080"
 	fmt.Printf("Uruchamianie serwera na porcie %s...\n", port)

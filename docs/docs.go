@@ -257,6 +257,108 @@ const docTemplate = `{
                 }
             }
         },
+        "/campaigns/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Modyfikuje parametry istniejącej kampanii (nazwę oraz ramy czasowe). Wymaga ważnego tokena JWT.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campaigns"
+                ],
+                "summary": "Aktualizuj istniejącą kampanię",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID Kampanii",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nowe dane kampanii (wymagane: name, start_date, end_date)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Campaign"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Pomyślnie zaktualizowano (Brak zawartości)"
+                    },
+                    "400": {
+                        "description": "Brakujące ID kampanii lub niepoprawny format JSON",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono kampanii do aktualizacji",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd wewnętrzny serwera",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Zmienia status kampanii na 'archived', chroniąc historię statystyk reklam.",
+                "tags": [
+                    "campaigns"
+                ],
+                "summary": "Zarchiwizuj kampanię (Soft Delete)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID Kampanii",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Pomyślnie zarchiwizowano (Brak zawartości)"
+                    },
+                    "400": {
+                        "description": "Brakujące ID kampanii",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono kampanii lub już zarchiwizowana",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd wewnętrzny serwera",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/campaigns/{id}/ads": {
             "get": {
                 "security": [
@@ -394,6 +496,38 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Błąd zapisu do bazy",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/campaigns/active": {
+            "get": {
+                "description": "Zwraca najnowszą kampanię ze statusem \"active\". Używane przez sklep, żeby automatycznie\nwyświetlać reklamy z bieżącej kampanii bez znajomości jej UUID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "campaigns"
+                ],
+                "summary": "Pobierz aktualnie aktywną kampanię (publiczne)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Campaign"
+                        }
+                    },
+                    "404": {
+                        "description": "Brak aktywnej kampanii",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd wewnętrzny serwera",
                         "schema": {
                             "type": "string"
                         }

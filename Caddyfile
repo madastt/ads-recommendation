@@ -1,5 +1,4 @@
 localhost {
-    # 1. Żądania do API, Swaggera i plików wędrują do serwera Go (backend)
     handle /api/* {
         reverse_proxy api:8080
     }
@@ -10,7 +9,6 @@ localhost {
         reverse_proxy api:8080
     }
 
-    # 2. Wszystko inne (cała reszta ruchu) wędruje do Reacta (frontend)
     handle {
         reverse_proxy frontend:5173
     }

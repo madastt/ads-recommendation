@@ -65,9 +65,6 @@ export default function Dashboard() {
         ws.onopen = () => console.log('Połączono ze strumieniem WebSocket');
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-
-            // Backend wysyła teraz różne typy wiadomości (event, campaign_created, ad_created, ad_deleted).
-            // Dashboard aktualizuje statystyki tylko dla wiadomości typu "event".
             if (msg.type !== 'event') return;
 
             const newEvent = msg.payload;
@@ -97,7 +94,7 @@ export default function Dashboard() {
                 end_date: new Date(newCampaign.end_date).toISOString()
             };
             await apiClient.post('/campaigns', payload);
-            fetchCampaigns(); // Odśwież listę
+            fetchCampaigns();
             setShowCampaignForm(false);
             setNewCampaign({ name: '', start_date: '', end_date: '' });
         } catch (err) {
@@ -158,6 +155,23 @@ export default function Dashboard() {
             alert("Błąd podczas usuwania reklamy: " + (err.response?.data || err.message));
         }
     };
+    const handleArchiveCampaign = async (campaignId, e) => {
+        e.stopPropagation();
+
+        if (!window.confirm("Czy na pewno chcesz zarchiwizować tę kampanię? Zostanie ona wyłączona, ale zachowa swoje statystyki.")) return;
+
+        try {
+            await apiClient.delete(`/campaigns/${campaignId}`);
+            setCampaigns(prev => prev.map(c =>
+                c.id === campaignId ? { ...c, status: 'archived' } : c
+            ));
+            if (selectedCampaign && selectedCampaign.id === campaignId) {
+                setSelectedCampaign({ ...selectedCampaign, status: 'archived' });
+            }
+        } catch (err) {
+            alert("Błąd podczas archiwizacji kampanii: " + (err.response?.data || err.message));
+        }
+    };
 
     return (
         <div style={{ maxWidth: '1200px', margin: '40px auto', fontFamily: 'sans-serif', display: 'flex', gap: '30px' }}>
@@ -207,23 +221,41 @@ export default function Dashboard() {
                                     onClick={() => setSelectedCampaign(camp)}
                                     style={{ padding: '15px', cursor: 'pointer', background: selectedCampaign?.id === camp.id ? '#e9ecef' : 'white', borderLeft: selectedCampaign?.id === camp.id ? '4px solid #007bff' : '4px solid transparent' }}
                                 >
+                                    {/* Górny rząd: Nazwa po lewej, Przyciski po prawej */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <strong>{camp.name}</strong>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingCampaign({
-                                                    ...camp,
-                                                    start_date: formatForInput(camp.start_date),
-                                                    end_date: formatForInput(camp.end_date)
-                                                });
-                                            }}
-                                            style={{ background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.8em', cursor: 'pointer' }}
-                                        >
-                                            Edytuj
-                                        </button>
+                                        <strong style={{ wordBreak: 'break-word', paddingRight: '10px' }}>{camp.name}</strong>
+
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            {camp.status !== 'archived' && (
+                                                <>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setEditingCampaign({
+                                                                ...camp,
+                                                                start_date: formatForInput(camp.start_date),
+                                                                end_date: formatForInput(camp.end_date)
+                                                            });
+                                                        }}
+                                                        style={{ background: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                                                    >
+                                                        Edytuj
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => handleArchiveCampaign(camp.id, e)}
+                                                        style={{ background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 8px', fontSize: '0.8em', cursor: 'pointer' }}
+                                                    >
+                                                        Archiwizuj
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.8em', color: '#666', marginTop: '5px' }}>{camp.status}</div>
+
+                                    {/* Dolny rząd: Status kampanii pod nazwą */}
+                                    <div style={{ fontSize: '0.8em', fontWeight: 'bold', color: camp.status === 'archived' ? '#dc3545' : '#28a745', marginTop: '5px' }}>
+                                        {camp.status.toUpperCase()}
+                                    </div>
                                 </div>
                             ) : (
                                 <form onSubmit={handleUpdateCampaign} style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '15px', background: '#fff3cd' }}>

@@ -261,3 +261,39 @@ func (h *CampaignHandler) UpdateCampaign(w http.ResponseWriter, r *http.Request)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// DeleteCampaign obsługuje DELETE /api/v1/campaigns/{id}
+// @Summary      Zarchiwizuj kampanię (Soft Delete)
+// @Description  Zmienia status kampanii na 'archived', chroniąc historię statystyk reklam.
+// @Tags         campaigns
+// @Param        id path string true "UUID Kampanii"
+// @Success      204  "Pomyślnie zarchiwizowano (Brak zawartości)"
+// @Failure      400  {string}  string "Brakujące ID kampanii"
+// @Failure      404  {string}  string "Nie znaleziono kampanii lub już zarchiwizowana"
+// @Failure      500  {string}  string "Błąd wewnętrzny serwera"
+// @Security     BearerAuth
+// @Router       /campaigns/{id} [delete]
+func (h *CampaignHandler) DeleteCampaign(w http.ResponseWriter, r *http.Request) {
+	campaignID := chi.URLParam(r, "id")
+	if campaignID == "" {
+		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
+		return
+	}
+
+	// Zamiast DELETE używamy UPDATE. Zapobiegamy też ponownej archiwizacji.
+	query := `UPDATE campaigns SET status = 'archived' WHERE id = $1 AND status != 'archived'`
+	result, err := h.DB.Exec(query, campaignID)
+
+	if err != nil {
+		http.Error(w, "Błąd podczas archiwizacji kampanii", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err == nil && rowsAffected == 0 {
+		http.Error(w, "Nie znaleziono kampanii do archiwizacji", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
