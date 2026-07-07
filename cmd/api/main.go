@@ -64,13 +64,9 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Get("/api/v1/ws", handlers.HandleWebSocket)
-
-	apiRouter := chi.NewRouter()
-	apiRouter.Use(middleware.RequestID)
-	apiRouter.Use(middleware.Logger)
-	apiRouter.Use(middleware.Recoverer)
-	apiRouter.Use(localmw.APILogger(db))
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	statsHandler := &handlers.StatsHandler{DB: db}
 
@@ -96,30 +92,36 @@ func main() {
 		}
 	})
 
-	apiRouter.Route("/api/v1", func(r chi.Router) {
-		r.Post("/auth/login", authHandler.Login)
-		r.Post("/events", eventHandler.LogEvent)
-		r.Get("/public/campaigns/active", campaignHandler.GetActiveCampaign)
-		r.Get("/public/campaigns/{id}/ads", adHandler.GetPublicAdDecision)
-		r.Group(func(r chi.Router) {
-			r.Use(handlers.JWTMiddleware)
-			r.Get("/admin/stats/api", statsHandler.GetAPIStats)
-			r.Post("/campaigns", campaignHandler.CreateCampaign)
-			r.Get("/campaigns", campaignHandler.GetCampaigns)
-			r.Put("/campaigns/{id}", campaignHandler.UpdateCampaign)
-			r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
-			r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
-			r.Post("/ads", adHandler.CreateAd)
-			r.Delete("/ads/{id}", adHandler.DeleteAd)
-			r.Delete("/campaigns/{id}", campaignHandler.DeleteCampaign)
-		})
-	})
-
-	r.Mount("/", apiRouter)
-
-	r.Get("/swagger/*", httpSwagger.WrapHandler)
 	fs := http.FileServer(http.Dir("./uploads"))
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fs))
+
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/ws", handlers.HandleWebSocket)
+
+		r.Group(func(r chi.Router) {
+			r.Use(localmw.APILogger(db))
+
+			r.Post("/auth/login", authHandler.Login)
+			r.Post("/events", eventHandler.LogEvent)
+			r.Get("/public/campaigns/active", campaignHandler.GetActiveCampaign)
+			r.Get("/public/campaigns/{id}/ads", adHandler.GetPublicAdDecision)
+
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.JWTMiddleware)
+				r.Get("/admin/stats/api", statsHandler.GetAPIStats)
+				r.Post("/campaigns", campaignHandler.CreateCampaign)
+				r.Get("/campaigns", campaignHandler.GetCampaigns)
+				r.Put("/campaigns/{id}", campaignHandler.UpdateCampaign)
+				r.Delete("/campaigns/{id}", campaignHandler.DeleteCampaign)
+				r.Get("/campaigns/{id}/ads", adHandler.GetAdsByCampaign)
+				r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
+				r.Post("/ads", adHandler.CreateAd)
+				r.Delete("/ads/{id}", adHandler.DeleteAd)
+			})
+		})
+	})
 
 	port := ":8080"
 	fmt.Printf("Uruchamianie serwera na porcie %s...\n", port)

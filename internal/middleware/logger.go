@@ -1,7 +1,10 @@
 package middleware
 
 import (
+	"bufio"
 	"database/sql"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 )
@@ -15,6 +18,15 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.statusCode = code
 	lrw.ResponseWriter.WriteHeader(code)
 }
+
+func (lrw *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := lrw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("opakowany ResponseWriter nie wspiera hijackingu (wymagane dla WebSocket)")
+	}
+	return hijacker.Hijack()
+}
+
 func APILogger(db *sql.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

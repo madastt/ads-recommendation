@@ -53,7 +53,12 @@ export default function Store() {
         ws.onopen = () => console.log('Sklep połączony ze strumieniem WebSocket');
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
-            if (msg.type === 'campaign_created' || msg.type === 'ad_created' || msg.type === 'ad_deleted') {
+            if (
+                msg.type === 'campaign_created' ||
+                msg.type === 'ad_created' ||
+                msg.type === 'ad_deleted' ||
+                msg.type === 'campaign_archived'
+            ) {
                 console.log(`Wykryto zmianę (${msg.type}), odświeżam ofertę sklepu...`);
                 loadStoreAd();
             }

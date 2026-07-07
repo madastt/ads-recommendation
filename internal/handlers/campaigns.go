@@ -280,7 +280,6 @@ func (h *CampaignHandler) DeleteCampaign(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Zamiast DELETE używamy UPDATE. Zapobiegamy też ponownej archiwizacji.
 	query := `UPDATE campaigns SET status = 'archived' WHERE id = $1 AND status != 'archived'`
 	result, err := h.DB.Exec(query, campaignID)
 
@@ -293,6 +292,10 @@ func (h *CampaignHandler) DeleteCampaign(w http.ResponseWriter, r *http.Request)
 	if err == nil && rowsAffected == 0 {
 		http.Error(w, "Nie znaleziono kampanii do archiwizacji", http.StatusNotFound)
 		return
+	}
+	Broadcast <- map[string]interface{}{
+		"type":    "campaign_archived",
+		"payload": map[string]string{"campaign_id": campaignID},
 	}
 
 	w.WriteHeader(http.StatusNoContent)
