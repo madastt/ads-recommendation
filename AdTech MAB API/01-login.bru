@@ -1,0 +1,34 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "admin",
+    "password": "admin123"
+  }
+}
+
+script:post-response {
+  const data = res.getBody();
+  if (data && data.token) {
+    bru.setVar("token", data.token);
+  }
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("response contains JWT token", function() {
+    expect(res.getBody()).to.have.property("token");
+  });
+}

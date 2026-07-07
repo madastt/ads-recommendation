@@ -1,0 +1,42 @@
+meta {
+  name: Create Campaign
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/campaigns
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Kampania testowa Bruno",
+    "start_date": "2026-07-01T00:00:00Z",
+    "end_date": "2026-12-31T00:00:00Z"
+  }
+}
+
+script:post-response {
+  const data = res.getBody();
+  if (data && data.id) {
+    bru.setVar("campaignId", data.id);
+  }
+}
+
+tests {
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("campaign has status active", function() {
+    expect(res.getBody().status).to.equal("active");
+  });
+  test("campaign has generated id", function() {
+    expect(res.getBody()).to.have.property("id");
+  });
+}

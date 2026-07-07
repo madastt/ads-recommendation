@@ -1,0 +1,27 @@
+meta {
+  name: Get Campaign Stats
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/campaigns/{{campaignId}}/stats
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("stats include our ad with at least 1 impression", function() {
+    const stats = res.getBody();
+    const adStat = stats.find(s => s.ad_id === bru.getVar("adId"));
+    expect(adStat).to.not.be.undefined;
+    expect(adStat.impressions).to.be.above(0);
+  });
+}

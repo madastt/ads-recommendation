@@ -1,0 +1,28 @@
+meta {
+  name: Log Event - Click
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "ad_id": "{{adId}}",
+    "event_type": "click",
+    "user_context": "{\"source\": \"bruno-test\", \"device\": \"desktop\"}"
+  }
+}
+
+tests {
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("event_type is click", function() {
+    expect(res.getBody().event_type).to.equal("click");
+  });
+}

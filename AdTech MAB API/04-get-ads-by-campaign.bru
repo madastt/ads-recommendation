@@ -1,0 +1,24 @@
+meta {
+  name: Get Ads By Campaign
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/campaigns/{{campaignId}}/ads
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("returns at least one ad", function() {
+    expect(res.getBody().length).to.be.above(0);
+  });
+}

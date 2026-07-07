@@ -1,0 +1,24 @@
+meta {
+  name: Get API Stats (Admin)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/admin/stats/api
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("total_requests is greater than 0", function() {
+    expect(res.getBody().total_requests).to.be.above(0);
+  });
+}

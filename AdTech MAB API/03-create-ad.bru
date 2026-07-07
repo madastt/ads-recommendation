@@ -1,0 +1,40 @@
+meta {
+  name: Create Ad
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/ads
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  campaign_id: {{campaignId}}
+  context_features: {"device": "desktop", "target_age": "18-25"}
+  image: @file(./sample-ad.png)
+}
+
+script:post-response {
+  const data = res.getBody();
+  if (data && data.id) {
+    bru.setVar("adId", data.id);
+  }
+}
+
+tests {
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("ad has image_url", function() {
+    expect(res.getBody()).to.have.property("image_url");
+  });
+  test("ad is linked to correct campaign", function() {
+    expect(res.getBody().campaign_id).to.equal(bru.getVar("campaignId"));
+  });
+}

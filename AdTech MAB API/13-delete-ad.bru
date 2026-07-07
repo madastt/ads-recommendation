@@ -1,0 +1,21 @@
+meta {
+  name: Delete Ad (cleanup)
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/ads/{{adId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("status is 204", function() {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

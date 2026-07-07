@@ -1,0 +1,20 @@
+meta {
+  name: Get Public Ad Decision
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/public/campaigns/{{campaignId}}/ads
+  body: none
+  auth: none
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("returns exactly one selected ad", function() {
+    expect(res.getBody().length).to.equal(1);
+  });
+}
