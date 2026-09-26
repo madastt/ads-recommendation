@@ -1,0 +1,28 @@
+meta {
+  name: Log Event - Impression
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "ad_id": "{{adId}}",
+    "event_type": "impression",
+    "user_context": "{\"source\": \"bruno-test\", \"device\": \"desktop\"}"
+  }
+}
+
+tests {
+  test("status is 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+  test("event_type is impression", function() {
+    expect(res.getBody().event_type).to.equal("impression");
+  });
+}

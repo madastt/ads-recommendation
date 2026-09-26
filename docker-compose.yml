@@ -1,0 +1,82 @@
+services:
+  # Główna baza danych PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: linucb_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: adtech_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Panel administracyjny do przeglądania bazy w przeglądarce
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: linucb_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+  # Silnik AI w Pythonie
+  mab-engine:
+    build: ./mab_engine
+    container_name: linucb_python
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "50051:50051"
+
+  # Główny serwer backendowy Go
+  api:
+    build: .
+    container_name: linucb_go
+    restart: always
+    expose:
+      - "8080"
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - db
+      - mab-engine
+
+  # Odwrotne Proxy (Terminacja SSL)
+  caddy:
+    image: caddy:2-alpine
+    container_name: linucb_caddy
+    restart: always
+    ports:
+      - "8443:443" # Otwieramy port HTTPS na zewnątrz
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+  # Środowisko deweloperskie React (Vite)
+  frontend:
+    build: ./adtech-front
+    container_name: linucb_react
+    expose:
+      - "5173"
+    volumes:
+      - ./adtech-front:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+# Deklaracja wolumenu, żeby dane nie znikały po wyłączeniu Dockera
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,33 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Store from './pages/Store';
+import ApiDashboard from "./pages/ApiDashboard.jsx";
+
+const ProtectedRoute = ({ children }) => {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) {
+        return <Navigate to="/login" replace />;
+    }
+    return children;
+};
+
+export default function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/store" element={<Store />} />
+                <Route path="/admin/stats" element={<ApiDashboard />} />
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute>
+                            <Dashboard />
+                        </ProtectedRoute>
+                    }
+                />
+            </Routes>
+        </BrowserRouter>
+    );
+}

@@ -1,0 +1,20 @@
+meta {
+  name: Get Active Campaign (Public)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/public/campaigns/active
+  body: none
+  auth: none
+}
+
+tests {
+  test("status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  test("returns a campaign with status active", function() {
+    expect(res.getBody().status).to.equal("active");
+  });
+}

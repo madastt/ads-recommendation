@@ -1,0 +1,23 @@
+meta {
+  name: Log Event - Missing Fields (negative test)
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/events
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "user_context": "test"
+  }
+}
+
+tests {
+  test("status is 400", function() {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

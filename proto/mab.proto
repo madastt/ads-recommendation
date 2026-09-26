@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package mab;
+
+option go_package = "paw/internal/pb";
+
+service MabEngine {
+  rpc GetNextAd (DecisionRequest) returns (DecisionResponse);
+  rpc RecordEvent (EventRequest) returns (EventResponse);
+  rpc SyncState (SyncRequest) returns (SyncResponse);
+}
+
+message DecisionRequest {
+  string campaign_id = 1;
+  string user_context = 2;
+  repeated string available_ad_ids = 3;
+}
+
+message DecisionResponse {
+  string selected_ad_id = 1;
+}
+
+message EventRequest {
+  string campaign_id = 1;
+  string ad_id = 2;
+  string event_type = 3;
+}
+
+message EventResponse {
+  bool success = 1;
+}
+
+message SyncRequest {
+  map<string, int32> impressions = 1;
+  map<string, int32> clicks = 2;
+}
+
+message SyncResponse {
+  bool success = 1;
+  string message = 2;
+}
