@@ -14,9 +14,11 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var Clients = make(map[*websocket.Conn]bool)
-var ClientsMutex = sync.Mutex{}
-var Broadcast = make(chan interface{})
+var (
+	Clients      = make(map[*websocket.Conn]bool)
+	ClientsMutex = sync.Mutex{}
+	Broadcast    = make(chan interface{}, 1000)
+)
 
 // HandleWebSocket obsługuje endpoint GET /api/v1/ws
 // @Summary      Nawiąż połączenie WebSocket
@@ -32,7 +34,6 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	defer func(ws *websocket.Conn) {
 		err := ws.Close()
 		if err != nil {
-
 		}
 	}(ws)
 

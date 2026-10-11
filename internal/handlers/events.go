@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"paw/internal/pb"
+	"strings"
 	"time"
+
+	"paw/internal/pb"
 
 	"paw/internal/models"
 )
@@ -28,54 +30,114 @@ type EventHandler struct {
 // @Failure      400  {string}  string "Brakujące dane lub niepoprawny event_type"
 // @Failure      500  {string}  string "Błąd zapisu do bazy"
 // @Router       /events [post]
+
 func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 	var req models.Event
 
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Niepoprawny format JSON", http.StatusBadRequest)
+	decoder := json.NewDecoder(
+		http.MaxBytesReader(w, r.Body, 1<<20),
+	)
+
+	if err := decoder.Decode(&req); err != nil {
+		http.Error(
+			w,
+			"Niepoprawny format JSON lub zbyt duże żądanie",
+			http.StatusBadRequest,
+		)
 		return
 	}
 
-	if req.AdID == "" || (req.EventType != "impression" && req.EventType != "click") {
-		http.Error(w, "Brakujące ad_id lub niepoprawny event_type (tylko: 'impression', 'click')", http.StatusBadRequest)
+	if strings.TrimSpace(req.AdID) == "" ||
+		(req.EventType != "impression" && req.EventType != "click") {
+		http.Error(
+			w,
+			"Brakujące ad_id lub niepoprawny event_type",
+			http.StatusBadRequest,
+		)
 		return
 	}
 
 	query := `
-		INSERT INTO events (ad_id, event_type, user_context) 
-		VALUES ($1, $2, $3) 
-		RETURNING id, created_at`
+        INSERT INTO events (ad_id, event_type, user_context)
+        VALUES ($1, $2, $3)
+        RETURNING id, created_at
+    `
 
-	err = h.DB.QueryRow(query, req.AdID, req.EventType, req.UserContext).Scan(&req.ID, &req.CreatedAt)
+	err := h.DB.QueryRowContext(
+		r.Context(),
+		query,
+		req.AdID,
+		req.EventType,
+		req.UserContext,
+	).Scan(&req.ID, &req.CreatedAt)
 	if err != nil {
-		http.Error(w, "Błąd podczas logowania zdarzenia: "+err.Error(), http.StatusInternalServerError)
+		log.Printf(
+			"Błąd zapisu zdarzenia ad_id=%q: %v",
+			req.AdID,
+			err,
+		)
+		http.Error(
+			w,
+			"Nie udało się zapisać zdarzenia",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
-	Broadcast <- map[string]interface{}{
-		"type":    "event",
-		"payload": req,
+	notification := map[string]interface{}{
+		"type": "event",
+		"payload": map[string]interface{}{
+			"id":         req.ID,
+			"ad_id":      req.AdID,
+			"event_type": req.EventType,
+			"created_at": req.CreatedAt,
+		},
 	}
 
-	go func(adID string, eventType string) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
+	select {
+	case Broadcast <- notification:
+	default:
+		log.Printf(
+			"Pominięto powiadomienie WebSocket dla zdarzenia ID=%v",
+			req.ID,
+		)
+	}
 
-		_, err := h.MabClient.RecordEvent(ctx, &pb.EventRequest{
+	if h.MabClient != nil {
+		client := h.MabClient
+
+		mabRequest := &pb.EventRequest{
 			CampaignId: "frontend",
-			AdId:       adID,
-			EventType:  eventType,
-		})
-
-		if err != nil {
-			log.Printf("Nie udało się powiadomić silnika MAB o evencie: %v", err)
+			AdId:       req.AdID,
+			EventType:  req.EventType,
 		}
-	}(req.AdID, req.EventType)
+
+		go func() {
+			ctx, cancel := context.WithTimeout(
+				context.Background(),
+				time.Second,
+			)
+			defer cancel()
+
+			_, err := client.RecordEvent(ctx, mabRequest)
+			if err != nil {
+				log.Printf(
+					"Nie udało się powiadomić silnika MAB o zdarzeniu ID=%v: %v",
+					req.ID,
+					err,
+				)
+			}
+		}()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(req)
-	if err != nil {
-		log.Printf("Błąd wysyłania odpowiedzi JSON: %v", err)
+
+	if err := json.NewEncoder(w).Encode(req); err != nil {
+		log.Printf(
+			"Błąd wysyłania odpowiedzi JSON dla zdarzenia ID=%v: %v",
+			req.ID,
+			err,
+		)
 	}
 }
