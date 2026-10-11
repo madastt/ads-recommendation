@@ -30,6 +30,7 @@ class EpsilonGreedyEngine:
         for ad in available_ads:
             if ad not in self.impressions:
                 self.impressions[ad] = 0
+            if ad not in self.clicks:
                 self.clicks[ad] = 0
 
         if random.random() < self.epsilon:
