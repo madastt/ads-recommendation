@@ -56,11 +56,12 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
+	var campaignID string
 
 	query := `
         INSERT INTO events (ad_id, event_type, user_context)
         VALUES ($1, $2, $3)
-        RETURNING id, created_at
+        RETURNING id, created_at, (SELECT campaign_id FROM ads WHERE id = $1)
     `
 
 	err := h.DB.QueryRowContext(
@@ -69,7 +70,7 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 		req.AdID,
 		req.EventType,
 		req.UserContext,
-	).Scan(&req.ID, &req.CreatedAt)
+	).Scan(&req.ID, &req.CreatedAt, &campaignID)
 	if err != nil {
 		log.Printf(
 			"Błąd zapisu zdarzenia ad_id=%q: %v",
@@ -107,9 +108,10 @@ func (h *EventHandler) LogEvent(w http.ResponseWriter, r *http.Request) {
 		client := h.MabClient
 
 		mabRequest := &pb.EventRequest{
-			CampaignId: "frontend",
-			AdId:       req.AdID,
-			EventType:  req.EventType,
+			CampaignId:  campaignID,
+			AdId:        req.AdID,
+			EventType:   req.EventType,
+			UserContext: req.UserContext,
 		}
 
 		go func() {

@@ -24,6 +24,7 @@ message EventRequest {
   string campaign_id = 1;
   string ad_id = 2;
   string event_type = 3;
+  string user_context = 4;
 }
 
 message EventResponse {
