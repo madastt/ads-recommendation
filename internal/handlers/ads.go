@@ -42,6 +42,7 @@ type AdHandler struct {
 func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
+		log.Printf("Błąd parsowania formularza r.ParseMultipartForm: %v", err)
 		http.Error(w, "Plik jest zbyt duży", http.StatusBadRequest)
 		return
 	}
