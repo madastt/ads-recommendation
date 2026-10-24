@@ -1,7 +1,6 @@
 /* Dashboard.css
-   Styl panelu administracyjnego. Klasy dodaj w Dashboard.jsx zgodnie
-   z instrukcją podaną w odpowiedzi. Część deklaracji ma !important,
-   ponieważ obecny komponent nadal używa stylów inline.
+   Styl panelu administracyjnego z nowoczesnym wyborem cech kontekstowych,
+   strefą Dropzone oraz ujednoliconymi kartami kreacji reklamowych.
 */
 
 .dashboard {
@@ -246,14 +245,17 @@
     font-size: 0.94rem;
     font-weight: 700;
     line-height: 1.35;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .dashboard .campaign-actions {
     display: flex !important;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     gap: 5px !important;
+    flex-shrink: 0;
 }
 
 .dashboard .campaign-status {
@@ -288,7 +290,7 @@
 .dashboard .form-card {
     display: flex !important;
     flex-direction: column !important;
-    gap: 16px !important;
+    gap: 18px !important;
     margin: 18px 0 22px !important;
     padding: 22px !important;
     border: 1px solid var(--border) !important;
@@ -309,7 +311,7 @@
     font-weight: 650 !important;
 }
 
-.dashboard input:not([type="file"]),
+.dashboard input:not([type="file"]):not([type="radio"]):not([type="checkbox"]),
 .dashboard textarea {
     display: block;
     width: 100% !important;
@@ -323,34 +325,197 @@
     box-shadow: 0 1px 2px rgb(16 24 40 / 3%);
 }
 
-.dashboard input:not([type="file"]):hover,
-.dashboard textarea:hover {
-    border-color: #98a2b3 !important;
+/* Strefa Dropzone dla wgrywania baneru */
+.dashboard .file-input-hidden {
+    display: none !important;
 }
 
-.dashboard input[type="file"] {
-    display: block;
-    max-width: 100%;
-    padding: 8px 0;
-    color: #475467;
-    font: inherit;
+.dashboard .file-dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 132px;
+    padding: 20px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
 }
 
-.dashboard textarea {
-    min-height: 96px;
-    resize: vertical;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-    font-size: 0.85rem !important;
-    line-height: 1.5 !important;
+.dashboard .file-dropzone:hover,
+.dashboard .file-dropzone.is-dragging {
+    border-color: var(--primary);
+    background: #eff6ff;
 }
 
-.dashboard small {
-    display: block;
-    margin-top: 7px;
-    color: var(--muted) !important;
+.dashboard .file-dropzone.has-file {
+    border-style: solid;
+    border-color: #93c5fd;
+    background: #f8fafc;
+}
+
+.dashboard .dropzone-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    color: #475569;
+}
+
+.dashboard .dropzone-icon {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+}
+
+.dashboard .dropzone-placeholder strong {
+    color: #1e293b;
+    font-size: 0.9rem;
+}
+
+.dashboard .dropzone-placeholder span {
+    color: var(--muted);
     font-size: 0.78rem;
 }
 
+.dashboard .dropzone-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+}
+
+.dashboard .dropzone-preview img {
+    width: 96px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+
+.dashboard .dropzone-file-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.dashboard .dropzone-file-info strong {
+    color: #1e293b;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dashboard .dropzone-file-info span {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+/* Sekcja wyboru cech kontekstowych (Pills / Checkboxy / Radio) */
+.dashboard .context-features-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboard .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.dashboard .feature-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard .feature-group-full {
+    grid-column: 1 / -1;
+}
+
+.dashboard .feature-group-title {
+    color: #475569;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.dashboard .choice-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dashboard .choice-pill {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 7px;
+    margin: 0 !important;
+    padding: 7px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155 !important;
+    font-size: 0.83rem !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    user-select: none;
+    transition: all 140ms ease;
+}
+
+.dashboard .choice-pill:hover {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+}
+
+.dashboard .choice-pill input {
+    margin: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.dashboard .choice-pill.is-checked {
+    border-color: var(--primary);
+    background: #eff6ff;
+    color: #1d4ed8 !important;
+    box-shadow: 0 1px 2px rgb(37 99 235 / 12%);
+}
+
+.dashboard .json-preview-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f1f5f9;
+    font-size: 0.78rem;
+}
+
+.dashboard .json-preview-label {
+    color: #475569;
+    font-weight: 600;
+}
+
+.dashboard .json-preview-box code {
+    color: #0f172a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+}
+
+/* Siatka i karty reklam */
 .dashboard .ads-grid {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
@@ -361,6 +526,8 @@
 
 .dashboard .ad-card {
     min-width: 0;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--border) !important;
     border-radius: 13px !important;
@@ -379,41 +546,68 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    height: 180px !important;
-    padding: 12px;
+    height: 176px !important;
+    padding: 0 !important;
     overflow: hidden;
     border-bottom: 1px solid #edf0f5;
-    background: #f8fafc !important;
+    background: #f1f5f9 !important;
 }
 
 .dashboard .ad-image {
     display: block;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    width: auto;
-    height: auto;
-    object-fit: contain !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
 }
 
 .dashboard .ad-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
     padding: 16px !important;
 }
 
 .dashboard .ad-meta-row {
     display: flex !important;
-    align-items: flex-start !important;
+    align-items: center !important;
     justify-content: space-between !important;
     gap: 10px !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 10px !important;
 }
 
 .dashboard .ad-id {
-    min-width: 0;
-    padding-right: 4px;
-    color: #98a2b3 !important;
-    font-size: 0.68rem !important;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
+    display: inline-block;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    color: #64748b !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem !important;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.dashboard .ad-feature-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 12px;
+}
+
+.dashboard .ad-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.7rem;
+    font-weight: 650;
+}
+
+.dashboard .ad-badge-muted {
+    background: #f1f5f9;
+    color: #475569;
 }
 
 .dashboard .ad-stat-row {
@@ -437,7 +631,7 @@
     justify-content: space-between !important;
     align-items: center;
     gap: 12px;
-    margin-top: 15px !important;
+    margin-top: auto !important;
     padding-top: 13px !important;
     border-top: 1px solid var(--border) !important;
     color: #344054;
@@ -473,102 +667,6 @@
     text-align: center;
 }
 
-@media (max-width: 1000px) {
-    .dashboard {
-        grid-template-columns: 240px minmax(0, 1fr) !important;
-        gap: 24px !important;
-    }
-
-    .dashboard-sidebar {
-        padding-right: 18px !important;
-    }
-
-    .dashboard .campaign-item-header {
-        flex-direction: column !important;
-    }
-
-    .dashboard .campaign-actions {
-        justify-content: flex-start;
-    }
-}
-
-@media (max-width: 760px) {
-    .dashboard {
-        width: calc(100% - 32px) !important;
-        margin: 20px auto !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 24px !important;
-    }
-
-    .dashboard-sidebar {
-        position: static;
-        max-height: none;
-        overflow: visible;
-        padding: 0 0 22px !important;
-        border-right: 0 !important;
-        border-bottom: 1px solid var(--border) !important;
-    }
-
-    .dashboard .campaign-item-header {
-        flex-direction: row !important;
-    }
-
-    .dashboard .main-header {
-        align-items: flex-start !important;
-        flex-direction: column !important;
-    }
-
-    .dashboard .main-header .btn-add-ad {
-        width: 100% !important;
-    }
-
-    .dashboard .ads-grid {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .dashboard {
-        width: calc(100% - 24px) !important;
-        margin: 12px auto !important;
-        font-size: 13px;
-    }
-
-    .dashboard .sidebar-header {
-        align-items: flex-start !important;
-    }
-
-    .dashboard h2 {
-        font-size: 1.2rem !important;
-    }
-
-    .dashboard .form-card {
-        padding: 15px !important;
-    }
-
-    .dashboard .ads-grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-    }
-
-    .dashboard .ad-preview {
-        height: 190px !important;
-    }
-
-    .dashboard .campaign-item-header {
-        flex-direction: column !important;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .dashboard *,
-    .dashboard *::before,
-    .dashboard *::after {
-        transition-duration: 0.01ms !important;
-        animation-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
-
 .dashboard .ad-preview-placeholder {
     padding: 12px;
     color: #98a2b3;
@@ -583,7 +681,6 @@
     border-radius: 0 !important;
     box-shadow: none !important;
 }
-
 
 /* Sekcja archiwum kampanii */
 .dashboard .archived-campaigns {
@@ -662,4 +759,66 @@
 
 .dashboard .campaign-item.is-archived-item.is-selected {
     background: #eff6ff !important;
+}
+
+@media (max-width: 1000px) {
+    .dashboard {
+        grid-template-columns: 240px minmax(0, 1fr) !important;
+        gap: 24px !important;
+    }
+
+    .dashboard-sidebar {
+        padding-right: 18px !important;
+    }
+
+    .dashboard .features-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 760px) {
+    .dashboard {
+        width: calc(100% - 32px) !important;
+        margin: 20px auto !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 24px !important;
+    }
+
+    .dashboard-sidebar {
+        position: static;
+        max-height: none;
+        overflow: visible;
+        padding: 0 0 22px !important;
+        border-right: 0 !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    .dashboard .main-header {
+        align-items: flex-start !important;
+        flex-direction: column !important;
+    }
+
+    .dashboard .main-header .btn-add-ad {
+        width: 100% !important;
+    }
+
+    .dashboard .ads-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard {
+        width: calc(100% - 24px) !important;
+        margin: 12px auto !important;
+        font-size: 13px;
+    }
+
+    .dashboard .form-card {
+        padding: 15px !important;
+    }
+
+    .dashboard .ads-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
 }

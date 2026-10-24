@@ -3,6 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import './Dashboard.css';
 
+const AGE_GROUPS = ['18-25', '26-35', '36-50', '50+'];
+const DEVICES = [
+    { value: 'desktop', label: 'Komputer (Desktop)' },
+    { value: 'mobile', label: 'Telefon (Mobile)' },
+    { value: 'tablet', label: 'Tablet' },
+];
+const INTEREST_CATEGORIES = [
+    { value: 'electronics', label: 'Elektronika' },
+    { value: 'gaming', label: 'Gry i hobby' },
+    { value: 'fashion', label: 'Moda' },
+    { value: 'books', label: 'Książki' },
+    { value: 'sport', label: 'Sport' },
+];
+
 const getErrorMessage = (error) => {
     const data = error?.response?.data;
     if (typeof data === 'string') return data;
@@ -43,6 +57,26 @@ const validateCampaignDates = (startDate, endDate) => {
     }
 };
 
+const shortenUuid = (id) => {
+    if (!id) return '—';
+    const str = String(id);
+    if (str.length <= 12) return str;
+    return `${str.slice(0, 8)}...`;
+};
+
+const parseAdFeatures = (rawFeatures) => {
+    if (!rawFeatures) return null;
+    try {
+        const parsed = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed;
+        }
+    } catch {
+        return null;
+    }
+    return null;
+};
+
 export default function Dashboard() {
     const [campaigns, setCampaigns] = useState([]);
     const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -63,10 +97,16 @@ export default function Dashboard() {
         name: '', start_date: '', end_date: '',
     });
     const [showAdForm, setShowAdForm] = useState(false);
-    const [newAd, setNewAd] = useState({
-        context_features: '{"target_age": "18-25", "device": "desktop"}',
+    const [isDraggingFile, setIsDraggingFile] = useState(false);
+
+    const [adFormState, setAdFormState] = useState({
+        target_age: '18-25',
+        device: 'desktop',
+        interests: ['electronics'],
         image: null,
+        previewUrl: '',
     });
+
     const [editingCampaign, setEditingCampaign] = useState(null);
 
     const selectedCampaignId = selectedCampaign?.id;
@@ -74,6 +114,12 @@ export default function Dashboard() {
     const maxCtr = Math.max(0, ...ads.map((ad) => Number(stats[ad.id]?.ctr) || 0));
     const activeCampaigns = campaigns.filter((campaign) => campaign.status !== 'archived');
     const archivedCampaigns = campaigns.filter((campaign) => campaign.status === 'archived');
+
+    const builtContextFeatures = {
+        target_age: adFormState.target_age,
+        device: adFormState.device,
+        ...(adFormState.interests.length > 0 ? { interests: adFormState.interests } : {}),
+    };
 
     const handleLogout = useCallback(() => {
         localStorage.removeItem('jwt_token');
@@ -102,6 +148,14 @@ export default function Dashboard() {
     useEffect(() => {
         fetchCampaigns();
     }, [fetchCampaigns]);
+
+    useEffect(() => {
+        return () => {
+            if (adFormState.previewUrl) {
+                URL.revokeObjectURL(adFormState.previewUrl);
+            }
+        };
+    }, [adFormState.previewUrl]);
 
     useEffect(() => {
         if (!selectedCampaignId) {
@@ -198,6 +252,28 @@ export default function Dashboard() {
         };
     }, [selectedCampaignId]);
 
+    const handleFileSelect = (file) => {
+        if (!file) return;
+        setAdFormState((prev) => {
+            if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+            return {
+                ...prev,
+                image: file,
+                previewUrl: URL.createObjectURL(file),
+            };
+        });
+    };
+
+    const toggleInterest = (interestValue) => {
+        setAdFormState((prev) => {
+            const exists = prev.interests.includes(interestValue);
+            const updated = exists
+                ? prev.interests.filter((item) => item !== interestValue)
+                : [...prev.interests, interestValue];
+            return { ...prev, interests: updated };
+        });
+    };
+
     const handleCreateCampaign = async (event) => {
         event.preventDefault();
         try {
@@ -248,18 +324,13 @@ export default function Dashboard() {
         if (selectedCampaignArchived) {
             return alert('Nie można dodawać reklam do zarchiwizowanej kampanii.');
         }
-        if (!newAd.image) return alert('Wybierz plik graficzny.');
+        if (!adFormState.image) return alert('Wybierz plik graficzny.');
 
         try {
-            const features = JSON.parse(newAd.context_features);
-            if (features === null || Array.isArray(features) || typeof features !== 'object') {
-                throw new Error('Cechy kontekstowe muszą być obiektem JSON.');
-            }
-
             const formData = new FormData();
             formData.append('campaign_id', selectedCampaign.id);
-            formData.append('context_features', JSON.stringify(features));
-            formData.append('image', newAd.image);
+            formData.append('context_features', JSON.stringify(builtContextFeatures));
+            formData.append('image', adFormState.image);
             await apiClient.post('/ads', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -270,7 +341,10 @@ export default function Dashboard() {
             setAds(response.data || []);
             setBrokenImages({});
             setShowAdForm(false);
-            setNewAd({ context_features: newAd.context_features, image: null });
+            setAdFormState((prev) => {
+                if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+                return { ...prev, image: null, previewUrl: '' };
+            });
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (error) {
             alert(`Nie udało się dodać reklamy: ${getErrorMessage(error)}`);
@@ -366,7 +440,7 @@ export default function Dashboard() {
                         onClick={() => setSelectedCampaign(campaign)}
                     >
                         <div className="campaign-item-header">
-                            <strong className="campaign-name">{campaign.name}</strong>
+                            <strong className="campaign-name" title={campaign.name}>{campaign.name}</strong>
                             <div className="campaign-actions">
                                 {!isArchived && (
                                     <>
@@ -530,29 +604,120 @@ export default function Dashboard() {
                         {showAdForm && !selectedCampaignArchived && (
                             <form className="form-card" onSubmit={handleCreateAd}>
                                 <div>
-                                    <label htmlFor="ad-image">Plik graficzny (.png, .jpg)</label>
-                                    <input
-                                        ref={fileInputRef} id="ad-image" type="file"
-                                        accept="image/png,image/jpeg,image/jpg,image/webp" required
-                                        onChange={(event) => setNewAd({
-                                            ...newAd, image: event.target.files?.[0] || null,
-                                        })}
-                                    />
+                                    <label htmlFor="ad-image">Plik graficzny kreacji (.png, .jpg, .webp)</label>
+                                    <div
+                                        className={`file-dropzone ${isDraggingFile ? 'is-dragging' : ''} ${adFormState.image ? 'has-file' : ''}`}
+                                        onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
+                                        onDragLeave={() => setIsDraggingFile(false)}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            setIsDraggingFile(false);
+                                            const droppedFile = e.dataTransfer.files?.[0];
+                                            if (droppedFile) handleFileSelect(droppedFile);
+                                        }}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            id="ad-image"
+                                            type="file"
+                                            className="file-input-hidden"
+                                            accept="image/png,image/jpeg,image/jpg,image/webp"
+                                            onChange={(event) => handleFileSelect(event.target.files?.[0] || null)}
+                                        />
+                                        {adFormState.previewUrl ? (
+                                            <div className="dropzone-preview">
+                                                <img src={adFormState.previewUrl} alt="Podgląd wybranego baneru" />
+                                                <div className="dropzone-file-info">
+                                                    <strong>{adFormState.image?.name}</strong>
+                                                    <span>Kliknij lub przeciągnij inny plik, aby podmienić</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="dropzone-placeholder">
+                                                <span className="dropzone-icon">🖼️</span>
+                                                <strong>Kliknij, aby wybrać plik graficzny lub przeciągnij go tutaj</strong>
+                                                <span>Obsługiwane formaty: PNG, JPG, WEBP</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <label htmlFor="ad-context-features">Cechy kontekstowe (JSON)</label>
-                                    <textarea
-                                        id="ad-context-features" required rows={4}
-                                        value={newAd.context_features}
-                                        onChange={(event) => setNewAd({
-                                            ...newAd, context_features: event.target.value,
-                                        })}
-                                    />
-                                    <small>
-                                        Cechy kontekstowe zostaną przekazane algorytmowi MAB.
-                                        Wprowadź obiekt JSON, np. z cechami urządzenia lub grupy wiekowej.
-                                    </small>
+
+                                <div className="context-features-section">
+                                    <label>Cechy kontekstowe kreacji (Wektor cech dla modelu LinUCB)</label>
+                                    <div className="features-grid">
+                                        <div className="feature-group">
+                                            <span className="feature-group-title">Docelowa grupa wiekowa</span>
+                                            <div className="choice-pills">
+                                                {AGE_GROUPS.map((age) => (
+                                                    <label
+                                                        key={age}
+                                                        className={`choice-pill ${adFormState.target_age === age ? 'is-checked' : ''}`}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="target_age"
+                                                            value={age}
+                                                            checked={adFormState.target_age === age}
+                                                            onChange={() => setAdFormState((prev) => ({ ...prev, target_age: age }))}
+                                                        />
+                                                        <span>{age} lat</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="feature-group">
+                                            <span className="feature-group-title">Docelowe urządzenie</span>
+                                            <div className="choice-pills">
+                                                {DEVICES.map((dev) => (
+                                                    <label
+                                                        key={dev.value}
+                                                        className={`choice-pill ${adFormState.device === dev.value ? 'is-checked' : ''}`}
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            name="device"
+                                                            value={dev.value}
+                                                            checked={adFormState.device === dev.value}
+                                                            onChange={() => setAdFormState((prev) => ({ ...prev, device: dev.value }))}
+                                                        />
+                                                        <span>{dev.label}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="feature-group feature-group-full">
+                                            <span className="feature-group-title">Kategorie zainteresowań (wielokrotny wybór)</span>
+                                            <div className="choice-pills">
+                                                {INTEREST_CATEGORIES.map((cat) => {
+                                                    const checked = adFormState.interests.includes(cat.value);
+                                                    return (
+                                                        <label
+                                                            key={cat.value}
+                                                            className={`choice-pill ${checked ? 'is-checked' : ''}`}
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                value={cat.value}
+                                                                checked={checked}
+                                                                onChange={() => toggleInterest(cat.value)}
+                                                            />
+                                                            <span>{cat.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="json-preview-box">
+                                        <span className="json-preview-label">Wygenerowany ładunek JSON dla silnika MAB:</span>
+                                        <code>{JSON.stringify(builtContextFeatures)}</code>
+                                    </div>
                                 </div>
+
                                 <button type="submit" className="btn-submit">Wgraj reklamę</button>
                             </form>
                         )}
@@ -567,6 +732,7 @@ export default function Dashboard() {
                                 const ctr = Number(adStats.ctr) || 0;
                                 const isHighestCtr = maxCtr > 0 && Math.abs(ctr - maxCtr) < 1e-9;
                                 const imageBroken = brokenImages[ad.id];
+                                const parsedFeatures = parseAdFeatures(ad.context_features);
 
                                 return (
                                     <article className="ad-card" key={ad.id}>
@@ -585,12 +751,29 @@ export default function Dashboard() {
                                         </div>
                                         <div className="ad-details">
                                             <div className="ad-meta-row">
-                                                <div className="ad-id">ID: {ad.id}</div>
+                                                <span className="ad-id" title={`Pełne UUID: ${ad.id}`}>
+                                                    ID: {shortenUuid(ad.id)}
+                                                </span>
                                                 <button
                                                     type="button" className="btn-danger btn-small"
                                                     onClick={() => handleDeleteAd(ad.id)}
                                                 >Usuń</button>
                                             </div>
+
+                                            {parsedFeatures && (
+                                                <div className="ad-feature-badges">
+                                                    {parsedFeatures.target_age && (
+                                                        <span className="ad-badge">Wiek: {parsedFeatures.target_age}</span>
+                                                    )}
+                                                    {parsedFeatures.device && (
+                                                        <span className="ad-badge">Urządzenie: {parsedFeatures.device}</span>
+                                                    )}
+                                                    {Array.isArray(parsedFeatures.interests) && parsedFeatures.interests.map((intItem) => (
+                                                        <span key={intItem} className="ad-badge ad-badge-muted">{intItem}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+
                                             <div className="ad-stat-row">
                                                 <span>Wyświetlenia</span>
                                                 <strong>{Number(adStats.impressions) || 0}</strong>
