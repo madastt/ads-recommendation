@@ -3,16 +3,15 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'pb'))
 import grpc
 from concurrent import futures
-import time
 import mab_pb2
 import mab_pb2_grpc
-from engine import EpsilonGreedyEngine
+from engine import LinUCBEngine
 
 
 class MabService(mab_pb2_grpc.MabEngineServicer):
     def __init__(self):
-        self.engine = EpsilonGreedyEngine(epsilon=0.15)
-        print("Silnik Epsilon-Greedy podłączony do gniazda.")
+        self.engine = LinUCBEngine(alpha=0.5, warm_start_weight=0.2)
+        print("Silnik LinUCB podłączony.")
 
     def GetNextAd(self, request, context):
         print(f"\nOtrzymano żądanie z serwera Go | Kampania: {request.campaign_id}")
@@ -26,14 +25,22 @@ class MabService(mab_pb2_grpc.MabEngineServicer):
         return mab_pb2.DecisionResponse(selected_ad_id=selected_ad)
 
     def RecordEvent(self, request, context):
-        self.engine.update_stats(request.ad_id, request.event_type)
+        self.engine.update_stats(
+            ad_id=request.ad_id,
+            event_type=request.event_type,
+            user_context=request.user_context
+        )
         return mab_pb2.EventResponse(success=True)
 
     def SyncState(self, request, context):
-        self.engine.hydrate(request.impressions, request.clicks)
+        self.engine.hydrate(
+            impressions_map=request.impressions,
+            clicks_map=request.clicks,
+            ad_contexts_map=request.ad_contexts
+        )
         return mab_pb2.SyncResponse(
             success=True,
-            message="Pamięć algorytmu została pomyślnie zsynchronizowana"
+            message="Pamięć algorytmu LinUCB została pomyślnie zsynchronizowana"
         )
 
 

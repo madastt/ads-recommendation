@@ -3,3 +3,5 @@ grpcio-tools==1.84.0
 protobuf==7.35.1
 setuptools==82.0.1
 typing_extensions==4.16.0
+
+numpy
