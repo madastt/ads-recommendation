@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
 	"paw/docs"
 	localmw "paw/internal/middleware"
 	"paw/internal/pb"
-	"time"
 
 	"paw/internal/database"
 	"paw/internal/handlers"
@@ -119,6 +120,7 @@ func main() {
 				r.Get("/campaigns/{id}/stats", campaignHandler.GetCampaignStats)
 				r.Post("/ads", adHandler.CreateAd)
 				r.Delete("/ads/{id}", adHandler.DeleteAd)
+				r.Get("/ads/{id}/click-stats", adHandler.GetAdClickStats)
 			})
 		})
 	})
@@ -130,14 +132,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("Krytyczny błąd serwera: %v", err)
 	}
-
 }
+
 func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
 	log.Println("Rozpoczynanie synchronizacji stanu z silnikiem MAB...")
 
 	impressions := make(map[string]int32)
 	clicks := make(map[string]int32)
+	adContexts := make(map[string]string)
 
+	// Pobranie cech kontekstowych wszystkich reklam
+	adRows, err := db.Query(`SELECT id, COALESCE(context_features::text, '{}') FROM ads`)
+	if err != nil {
+		log.Printf("Błąd pobierania kontekstów reklam do synchronizacji: %v", err)
+		return
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(adRows)
+
+	for adRows.Next() {
+		var adID, ctxFeatures string
+		if err := adRows.Scan(&adID, &ctxFeatures); err == nil {
+			adContexts[adID] = ctxFeatures
+		}
+	}
+
+	// Pobranie historycznych wyświetleń i kliknięć
 	query := `SELECT ad_id, event_type, COUNT(*) FROM events GROUP BY ad_id, event_type`
 	rows, err := db.Query(query)
 	if err != nil {
@@ -145,10 +166,7 @@ func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
 		return
 	}
 	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-
-		}
+		_ = rows.Close()
 	}(rows)
 
 	for rows.Next() {
@@ -163,12 +181,14 @@ func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
 			clicks[adID] = count
 		}
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	resp, err := client.SyncState(ctx, &pb.SyncRequest{
 		Impressions: impressions,
 		Clicks:      clicks,
+		AdContexts:  adContexts,
 	})
 
 	if err != nil {

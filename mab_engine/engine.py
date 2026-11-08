@@ -3,19 +3,27 @@ import json
 import threading
 import numpy as np
 
+
 class LinUCBEngine:
     AGE_GROUPS = ["18-25", "26-35", "36-50", "50+"]
     DEVICES = ["desktop", "mobile", "tablet"]
-    INTERESTS = ["electronics", "gaming", "fashion", "travel", "sport"]
+    INTERESTS = [
+        "electronics",
+        "gaming",
+        "fashion",
+        "books",
+        "sport",
+    ]
 
     def __init__(self, alpha=0.5, warm_start_weight=0.2):
-        self.alpha=alpha
-        self.warm_start_weight=warm_start_weight
+        self.alpha = alpha
+        self.warm_start_weight = warm_start_weight
 
         self.d = 1 + len(self.AGE_GROUPS) + len(self.DEVICES) + len(self.INTERESTS)
 
         self.A = {}
         self.b = {}
+        self.warm_started_ads = set()
         self.lock = threading.Lock()
 
     def _ensure_ad_initialized(self, ad_id, ad_context_json=None):
@@ -23,9 +31,9 @@ class LinUCBEngine:
             self.A[ad_id] = np.identity(self.d, dtype=np.float64)
             self.b[ad_id] = np.zeros((self.d, 1), dtype=np.float64)
 
-            if ad_context_json and ad_id not in self.warm_started_ads:
-                self._apply_warm_start(ad_id, ad_context_json)
-                self.warm_started_ads.add(ad_id)
+        if ad_context_json and ad_id not in self.warm_started_ads:
+            self._apply_warm_start(ad_id, ad_context_json)
+            self.warm_started_ads.add(ad_id)
 
     def _apply_warm_start(self, ad_id, ad_context_json):
         x_init = self._context_to_vector(ad_context_json, include_bias=False)
@@ -47,7 +55,11 @@ class LinUCBEngine:
 
         offset = 1
 
-        age_val = data.get("age") or data.get("target_age")
+        age_val = (
+            data.get("age_group")
+            or data.get("age")
+            or data.get("target_age")
+        )
         if isinstance(age_val, str):
             age_val = [age_val]
         if isinstance(age_val, list):
@@ -92,7 +104,6 @@ class LinUCBEngine:
                 b_a = self.b[ad_id]
 
                 theta_a = np.linalg.solve(A_a, b_a)
-
                 A_inv_x = np.linalg.solve(A_a, x_t)
 
                 expected_reward = float(np.dot(theta_a.T, x_t)[0, 0])
@@ -123,17 +134,25 @@ class LinUCBEngine:
                 self.b[ad_id] += x_t
                 print(f"[LinUCB] Zaktualizowano wektor nagród b (CLICK) dla {ad_id[:8]}!")
 
-    def hydrate(self, impressions_map, clicks_map):
+    def hydrate(self, impressions_map, clicks_map, ad_contexts_map=None):
+        if ad_contexts_map is None:
+            ad_contexts_map = {}
+
         with self.lock:
-            all_ad_ids = set(impressions_map.keys()) | set(clicks_map.keys())
+            all_ad_ids = (
+                set(impressions_map.keys())
+                | set(clicks_map.keys())
+                | set(ad_contexts_map.keys())
+            )
             for ad_id in all_ad_ids:
-                self._ensure_ad_initialized(ad_id)
-                imp = float(impressions_map.get(ad_id, 0))
-                clk = float(clicks_map.get(ad_id, 0))
+                is_new = ad_id not in self.A
+                self._ensure_ad_initialized(ad_id, ad_contexts_map.get(ad_id))
 
-                self.A[ad_id][0, 0] = 1.0 + imp
-                self.b[ad_id][0, 0] = clk
+                if is_new:
+                    imp = float(impressions_map.get(ad_id, 0))
+                    clk = float(clicks_map.get(ad_id, 0))
 
-            print(f"[LinUCB] Zsynchronizowano stan bazowy! Reklamy w pamięci: {len(self.A)}")
+                    self.A[ad_id][0, 0] = 1.0 + imp
+                    self.b[ad_id][0, 0] = clk
 
-
+            print(f"[LinUCB] Zsynchronizowano stan! Reklamy w pamięci: {len(self.A)}")

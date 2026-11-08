@@ -241,6 +241,7 @@ type SyncRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Impressions   map[string]int32       `protobuf:"bytes,1,rep,name=impressions,proto3" json:"impressions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	Clicks        map[string]int32       `protobuf:"bytes,2,rep,name=clicks,proto3" json:"clicks,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	AdContexts    map[string]string      `protobuf:"bytes,3,rep,name=ad_contexts,json=adContexts,proto3" json:"ad_contexts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -285,6 +286,13 @@ func (x *SyncRequest) GetImpressions() map[string]int32 {
 func (x *SyncRequest) GetClicks() map[string]int32 {
 	if x != nil {
 		return x.Clicks
+	}
+	return nil
+}
+
+func (x *SyncRequest) GetAdContexts() map[string]string {
+	if x != nil {
+		return x.AdContexts
 	}
 	return nil
 }
@@ -361,16 +369,21 @@ const file_mab_proto_rawDesc = "" +
 	"event_type\x18\x03 \x01(\tR\teventType\x12!\n" +
 	"\fuser_context\x18\x04 \x01(\tR\vuserContext\")\n" +
 	"\rEventResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x83\x02\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x85\x03\n" +
 	"\vSyncRequest\x12C\n" +
 	"\vimpressions\x18\x01 \x03(\v2!.mab.SyncRequest.ImpressionsEntryR\vimpressions\x124\n" +
-	"\x06clicks\x18\x02 \x03(\v2\x1c.mab.SyncRequest.ClicksEntryR\x06clicks\x1a>\n" +
+	"\x06clicks\x18\x02 \x03(\v2\x1c.mab.SyncRequest.ClicksEntryR\x06clicks\x12A\n" +
+	"\vad_contexts\x18\x03 \x03(\v2 .mab.SyncRequest.AdContextsEntryR\n" +
+	"adContexts\x1a>\n" +
 	"\x10ImpressionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a9\n" +
 	"\vClicksEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"B\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a=\n" +
+	"\x0fAdContextsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
 	"\fSyncResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage2\xad\x01\n" +
@@ -391,7 +404,7 @@ func file_mab_proto_rawDescGZIP() []byte {
 	return file_mab_proto_rawDescData
 }
 
-var file_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_mab_proto_goTypes = []any{
 	(*DecisionRequest)(nil),  // 0: mab.DecisionRequest
 	(*DecisionResponse)(nil), // 1: mab.DecisionResponse
@@ -401,21 +414,23 @@ var file_mab_proto_goTypes = []any{
 	(*SyncResponse)(nil),     // 5: mab.SyncResponse
 	nil,                      // 6: mab.SyncRequest.ImpressionsEntry
 	nil,                      // 7: mab.SyncRequest.ClicksEntry
+	nil,                      // 8: mab.SyncRequest.AdContextsEntry
 }
 var file_mab_proto_depIdxs = []int32{
 	6, // 0: mab.SyncRequest.impressions:type_name -> mab.SyncRequest.ImpressionsEntry
 	7, // 1: mab.SyncRequest.clicks:type_name -> mab.SyncRequest.ClicksEntry
-	0, // 2: mab.MabEngine.GetNextAd:input_type -> mab.DecisionRequest
-	2, // 3: mab.MabEngine.RecordEvent:input_type -> mab.EventRequest
-	4, // 4: mab.MabEngine.SyncState:input_type -> mab.SyncRequest
-	1, // 5: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
-	3, // 6: mab.MabEngine.RecordEvent:output_type -> mab.EventResponse
-	5, // 7: mab.MabEngine.SyncState:output_type -> mab.SyncResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	8, // 2: mab.SyncRequest.ad_contexts:type_name -> mab.SyncRequest.AdContextsEntry
+	0, // 3: mab.MabEngine.GetNextAd:input_type -> mab.DecisionRequest
+	2, // 4: mab.MabEngine.RecordEvent:input_type -> mab.EventRequest
+	4, // 5: mab.MabEngine.SyncState:input_type -> mab.SyncRequest
+	1, // 6: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
+	3, // 7: mab.MabEngine.RecordEvent:output_type -> mab.EventResponse
+	5, // 8: mab.MabEngine.SyncState:output_type -> mab.SyncResponse
+	6, // [6:9] is the sub-list for method output_type
+	3, // [3:6] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_mab_proto_init() }
@@ -429,7 +444,7 @@ func file_mab_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mab_proto_rawDesc), len(file_mab_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

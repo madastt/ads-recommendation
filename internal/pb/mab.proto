@@ -34,6 +34,7 @@ message EventResponse {
 message SyncRequest {
   map<string, int32> impressions = 1;
   map<string, int32> clicks = 2;
+  map<string, string> ad_contexts = 3;
 }
 
 message SyncResponse {

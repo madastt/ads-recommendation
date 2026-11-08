@@ -17,6 +17,22 @@ const INTEREST_CATEGORIES = [
     { value: 'sport', label: 'Sport' },
 ];
 
+const INTEREST_LABELS = {
+    electronics: 'Elektronika',
+    gaming: 'Gry i hobby',
+    fashion: 'Moda',
+    books: 'Książki',
+    travel: 'Podróż',
+    sport: 'Sport',
+};
+
+const DEVICE_LABELS = {
+    desktop: 'Komputer',
+    mobile: 'Telefon',
+    tablet: 'Tablet',
+    Nieznany: 'Nieznane',
+};
+
 const getErrorMessage = (error) => {
     const data = error?.response?.data;
     if (typeof data === 'string') return data;
@@ -87,6 +103,10 @@ export default function Dashboard() {
     const [showArchivedCampaigns, setShowArchivedCampaigns] = useState(false);
     const [detailsError, setDetailsError] = useState('');
     const [brokenImages, setBrokenImages] = useState({});
+    const [selectedAdForStats, setSelectedAdForStats] = useState(null);
+    const [adClickStats, setAdClickStats] = useState(null);
+    const [adClickStatsLoading, setAdClickStatsLoading] = useState(false);
+    const [adClickStatsError, setAdClickStatsError] = useState('');
 
     const navigate = useNavigate();
     const wsRef = useRef(null);
@@ -334,7 +354,7 @@ export default function Dashboard() {
             await apiClient.post('/ads', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                }
+                },
             });
 
             const response = await apiClient.get(`/campaigns/${selectedCampaign.id}/ads`);
@@ -349,6 +369,29 @@ export default function Dashboard() {
         } catch (error) {
             alert(`Nie udało się dodać reklamy: ${getErrorMessage(error)}`);
         }
+    };
+
+    const handleShowAdStats = async (ad) => {
+        setSelectedAdForStats(ad);
+        setAdClickStats(null);
+        setAdClickStatsError('');
+        setAdClickStatsLoading(true);
+
+        try {
+            const response = await apiClient.get(`/ads/${ad.id}/click-stats`);
+            setAdClickStats(response.data);
+        } catch (error) {
+            console.error('Błąd pobierania szczegółowych statystyk:', error);
+            setAdClickStatsError('Nie udało się pobrać szczegółowych statystyk reklamy.');
+        } finally {
+            setAdClickStatsLoading(false);
+        }
+    };
+
+    const closeAdStats = () => {
+        setSelectedAdForStats(null);
+        setAdClickStats(null);
+        setAdClickStatsError('');
     };
 
     const handleDeleteAd = async (adId) => {
@@ -644,7 +687,7 @@ export default function Dashboard() {
                                 </div>
 
                                 <div className="context-features-section">
-                                    <label>Cechy kontekstowe kreacji (Wektor cech dla modelu LinUCB)</label>
+                                    <label>Wstępne cechy kontekstowe kreacji</label>
                                     <div className="features-grid">
                                         <div className="feature-group">
                                             <span className="feature-group-title">Docelowa grupa wiekowa</span>
@@ -689,7 +732,7 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="feature-group feature-group-full">
-                                            <span className="feature-group-title">Kategorie zainteresowań (wielokrotny wybór)</span>
+                                            <span className="feature-group-title">Kategorie zainteresowań (segmenty odbiorców)</span>
                                             <div className="choice-pills">
                                                 {INTEREST_CATEGORIES.map((cat) => {
                                                     const checked = adFormState.interests.includes(cat.value);
@@ -710,11 +753,6 @@ export default function Dashboard() {
                                                 })}
                                             </div>
                                         </div>
-                                    </div>
-
-                                    <div className="json-preview-box">
-                                        <span className="json-preview-label">Wygenerowany ładunek JSON dla silnika MAB:</span>
-                                        <code>{JSON.stringify(builtContextFeatures)}</code>
                                     </div>
                                 </div>
 
@@ -754,10 +792,19 @@ export default function Dashboard() {
                                                 <span className="ad-id" title={`Pełne UUID: ${ad.id}`}>
                                                     ID: {shortenUuid(ad.id)}
                                                 </span>
-                                                <button
-                                                    type="button" className="btn-danger btn-small"
-                                                    onClick={() => handleDeleteAd(ad.id)}
-                                                >Usuń</button>
+                                                <div style={{ display: 'flex', gap: '6px' }}>
+                                                    <button
+                                                        type="button"
+                                                        className="btn-secondary btn-small"
+                                                        onClick={() => handleShowAdStats(ad)}
+                                                    >
+                                                        Szczegóły
+                                                    </button>
+                                                    <button
+                                                        type="button" className="btn-danger btn-small"
+                                                        onClick={() => handleDeleteAd(ad.id)}
+                                                    >Usuń</button>
+                                                </div>
                                             </div>
 
                                             {parsedFeatures && (
@@ -769,7 +816,9 @@ export default function Dashboard() {
                                                         <span className="ad-badge">Urządzenie: {parsedFeatures.device}</span>
                                                     )}
                                                     {Array.isArray(parsedFeatures.interests) && parsedFeatures.interests.map((intItem) => (
-                                                        <span key={intItem} className="ad-badge ad-badge-muted">{intItem}</span>
+                                                        <span key={intItem} className="ad-badge ad-badge-muted">
+                                                            {INTEREST_LABELS[intItem] || intItem}
+                                                        </span>
                                                     ))}
                                                 </div>
                                             )}
@@ -791,6 +840,157 @@ export default function Dashboard() {
                                 );
                             })}
                         </div>
+
+                        {selectedAdForStats && (
+                            <div
+                                className="click-stats-overlay"
+                                onMouseDown={(event) => {
+                                    if (event.target === event.currentTarget) {
+                                        closeAdStats();
+                                    }
+                                }}
+                            >
+                                <section
+                                    className="click-stats-modal"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="click-stats-title"
+                                >
+                                    <div className="click-stats-header">
+                                        <div>
+                                            <h3 id="click-stats-title">
+                                                Szczegółowe statystyki kreacji
+                                            </h3>
+                                            <span>
+                                                ID: {shortenUuid(selectedAdForStats.id)}
+                                            </span>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            className="btn-secondary btn-small"
+                                            onClick={closeAdStats}
+                                        >
+                                            Zamknij
+                                        </button>
+                                    </div>
+
+                                    {adClickStatsLoading && (
+                                        <p>Ładowanie statystyk...</p>
+                                    )}
+
+                                    {adClickStatsError && (
+                                        <p className="click-stats-error">
+                                            {adClickStatsError}
+                                        </p>
+                                    )}
+
+                                    {adClickStats && (
+                                        <>
+                                            <div className="click-stats-total">
+                                                <span>Łączna liczba kliknięć</span>
+                                                <strong>{adClickStats.total_clicks}</strong>
+                                            </div>
+
+                                            <div className="click-stats-grid">
+                                                <section className="click-stats-panel">
+                                                    <h4>Grupa wiekowa</h4>
+
+                                                    {adClickStats.by_age_group.map((item) => (
+                                                        <div className="click-stats-row" key={item.label}>
+                                                            <span>
+                                                                {item.label === 'Nieznany' ? 'Nieznana' : `${item.label} lat`}
+                                                            </span>
+                                                            <strong>{item.count}</strong>
+                                                        </div>
+                                                    ))}
+
+                                                    {adClickStats.by_age_group.length === 0 && (
+                                                        <p>Brak danych</p>
+                                                    )}
+                                                </section>
+
+                                                <section className="click-stats-panel">
+                                                    <h4>Urządzenie</h4>
+
+                                                    {adClickStats.by_device.map((item) => (
+                                                        <div className="click-stats-row" key={item.label}>
+                                                            <span>
+                                                                {DEVICE_LABELS[item.label] || item.label}
+                                                            </span>
+                                                            <strong>{item.count}</strong>
+                                                        </div>
+                                                    ))}
+
+                                                    {adClickStats.by_device.length === 0 && (
+                                                        <p>Brak danych</p>
+                                                    )}
+                                                </section>
+
+                                                <section className="click-stats-panel">
+                                                    <h4>Zainteresowania</h4>
+
+                                                    {adClickStats.by_interest.map((item) => (
+                                                        <div className="click-stats-row" key={item.label}>
+                                                            <span>
+                                                                {INTEREST_LABELS[item.label] || item.label}
+                                                            </span>
+                                                            <strong>{item.count}</strong>
+                                                        </div>
+                                                    ))}
+
+                                                    {adClickStats.by_interest.length === 0 && (
+                                                        <p>Brak danych</p>
+                                                    )}
+                                                </section>
+                                            </div>
+
+                                            <section className="click-stats-history">
+                                                <h4>Ostatnie kliknięcia</h4>
+
+                                                {adClickStats.recent_clicks.length === 0 ? (
+                                                    <p>Nie zarejestrowano jeszcze żadnych kliknięć.</p>
+                                                ) : (
+                                                    <div className="click-stats-table-wrap">
+                                                        <table>
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Data</th>
+                                                                <th>Wiek</th>
+                                                                <th>Zainteresowania</th>
+                                                                <th>Urządzenie</th>
+                                                            </tr>
+                                                            </thead>
+
+                                                            <tbody>
+                                                            {adClickStats.recent_clicks.map((click) => (
+                                                                <tr key={click.id}>
+                                                                    <td>
+                                                                        {new Date(click.created_at).toLocaleString('pl-PL')}
+                                                                    </td>
+                                                                    <td>{click.age_group}</td>
+                                                                    <td>
+                                                                        {click.interests.length > 0
+                                                                            ? click.interests
+                                                                                .map((interest) => INTEREST_LABELS[interest] || interest)
+                                                                                .join(', ')
+                                                                            : 'Brak danych'}
+                                                                    </td>
+                                                                    <td>
+                                                                        {DEVICE_LABELS[click.device] || click.device}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                            </section>
+                                        </>
+                                    )}
+                                </section>
+                            </div>
+                        )}
                     </>
                 )}
             </main>

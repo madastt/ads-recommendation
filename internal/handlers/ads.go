@@ -12,10 +12,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"paw/internal/models"
-	"paw/internal/pb"
 	"strings"
 	"time"
+
+	"paw/internal/models"
+	"paw/internal/pb"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -62,7 +63,6 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	defer func(file multipart.File) {
 		err := file.Close()
 		if err != nil {
-
 		}
 	}(file)
 
@@ -83,7 +83,6 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	defer func(dst *os.File) {
 		err := dst.Close()
 		if err != nil {
-
 		}
 	}(dst)
 	if _, err = io.Copy(dst, file); err != nil {
@@ -112,6 +111,19 @@ func (h *AdHandler) CreateAd(w http.ResponseWriter, r *http.Request) {
 	Broadcast <- map[string]interface{}{
 		"type":    "ad_created",
 		"payload": ad,
+	}
+
+	if h.MabClient != nil {
+		go func(adID, ctxFeatures string) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			_, err := h.MabClient.SyncState(ctx, &pb.SyncRequest{
+				AdContexts: map[string]string{adID: ctxFeatures},
+			})
+			if err != nil {
+				log.Printf("Nie udało się przesłać warm-startu dla reklamy %s: %v", adID, err)
+			}
+		}(ad.ID, ad.ContextFeatures)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -149,7 +161,6 @@ func (h *AdHandler) GetAdsByCampaign(w http.ResponseWriter, r *http.Request) {
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-
 		}
 	}(rows)
 
@@ -232,68 +243,149 @@ func (h *AdHandler) DeleteAd(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 func (h *AdHandler) GetPublicAdDecision(w http.ResponseWriter, r *http.Request) {
 	campaignID := chi.URLParam(r, "id")
 	if campaignID == "" {
 		http.Error(w, "Brakujące ID kampanii", http.StatusBadRequest)
 		return
 	}
+	params := r.URL.Query()
 
-	query := `SELECT id, campaign_id, image_url, context_features, created_at FROM ads WHERE campaign_id = $1`
+	device := params.Get("device")
+	ageGroup := params.Get("age_group")
+	interests := params["interests"]
+
+	if device == "" {
+		device = "desktop"
+	}
+
+	if ageGroup == "" {
+		ageGroup = "18-25"
+	}
+
+	validDevices := map[string]bool{
+		"desktop": true,
+		"mobile":  true,
+		"tablet":  true,
+	}
+
+	validAgeGroups := map[string]bool{
+		"18-25": true,
+		"26-35": true,
+		"36-50": true,
+		"50+":   true,
+	}
+
+	validInterests := map[string]bool{
+		"electronics": true,
+		"gaming":      true,
+		"fashion":     true,
+		"books":       true,
+		"sport":       true,
+	}
+
+	if !validDevices[device] || !validAgeGroups[ageGroup] {
+		http.Error(w, "Niepoprawny kontekst użytkownika", http.StatusBadRequest)
+		return
+	}
+
+	for _, interest := range interests {
+		if !validInterests[interest] {
+			http.Error(w, "Niepoprawna kategoria zainteresowań", http.StatusBadRequest)
+			return
+		}
+	}
+
+	userContext := map[string]interface{}{
+		"source":    "store",
+		"age_group": ageGroup,
+		"interests": interests,
+		"device":    device,
+	}
+
+	contextJSON, err := json.Marshal(userContext)
+	if err != nil {
+		http.Error(w, "Błąd tworzenia kontekstu użytkownika", http.StatusInternalServerError)
+		return
+	}
+
+	query := `
+		SELECT id, campaign_id, image_url, context_features, created_at
+		FROM ads
+		WHERE campaign_id = $1
+	`
+
 	rows, err := h.DB.Query(query, campaignID)
 	if err != nil {
 		http.Error(w, "Błąd podczas pobierania reklam", http.StatusInternalServerError)
 		return
 	}
-	defer func(rows *sql.Rows) {
-		err := rows.Close()
-		if err != nil {
-		}
-	}(rows)
+	defer rows.Close()
 
 	var ads []models.Ad
 	var adIDs []string
+
 	for rows.Next() {
 		var ad models.Ad
-		err := rows.Scan(&ad.ID, &ad.CampaignID, &ad.ImageURL, &ad.ContextFeatures, &ad.CreatedAt)
+
+		err := rows.Scan(
+			&ad.ID,
+			&ad.CampaignID,
+			&ad.ImageURL,
+			&ad.ContextFeatures,
+			&ad.CreatedAt,
+		)
 		if err != nil {
+			http.Error(w, "Błąd mapowania reklam", http.StatusInternalServerError)
 			return
 		}
+
 		ads = append(ads, ad)
 		adIDs = append(adIDs, ad.ID)
 	}
 
-	if len(ads) == 0 {
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode([]models.Ad{})
-		if err != nil {
-			return
-		}
+	if err := rows.Err(); err != nil {
+		http.Error(w, "Błąd odczytu reklam", http.StatusInternalServerError)
 		return
 	}
+
+	if len(ads) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]models.Ad{})
+		return
+	}
+
 	req := &pb.DecisionRequest{
 		CampaignId:     campaignID,
-		UserContext:    `{"source": "store", "device": "desktop"}`,
+		UserContext:    string(contextJSON),
 		AvailableAdIds: adIDs,
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
+
 	resp, err := h.MabClient.GetNextAd(ctx, req)
 	if err != nil {
-		log.Printf("Silnik MAB odrzucił zapytanie (brak odpowiedzi w 250ms): %v", err)
+		log.Printf("Silnik MAB nie odpowiedział: %v", err)
 		http.Error(w, "Silnik analityczny nie odpowiedział na czas", http.StatusInternalServerError)
 		return
 	}
+
 	var chosenAd models.Ad
+
 	for _, a := range ads {
 		if a.ID == resp.SelectedAdId {
 			chosenAd = a
 			break
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode([]models.Ad{chosenAd})
-	if err != nil {
+
+	if chosenAd.ID == "" {
+		http.Error(w, "Silnik MAB zwrócił niepoprawną reklamę", http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode([]models.Ad{chosenAd})
 }
