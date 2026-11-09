@@ -10,8 +10,9 @@ import (
 )
 
 type ClickBreakdown struct {
-	Label string `json:"label"`
-	Count int    `json:"count"`
+	Label       string `json:"label"`
+	Impressions int    `json:"impressions"`
+	Clicks      int    `json:"clicks"`
 }
 
 type RecentClick struct {
@@ -23,11 +24,12 @@ type RecentClick struct {
 }
 
 type AdClickStatsResponse struct {
-	TotalClicks  int              `json:"total_clicks"`
-	ByAgeGroup   []ClickBreakdown `json:"by_age_group"`
-	ByDevice     []ClickBreakdown `json:"by_device"`
-	ByInterest   []ClickBreakdown `json:"by_interest"`
-	RecentClicks []RecentClick    `json:"recent_clicks"`
+	TotalImpressions int              `json:"total_impressions"`
+	TotalClicks      int              `json:"total_clicks"`
+	ByAgeGroup       []ClickBreakdown `json:"by_age_group"`
+	ByDevice         []ClickBreakdown `json:"by_device"`
+	ByInterest       []ClickBreakdown `json:"by_interest"`
+	RecentClicks     []RecentClick    `json:"recent_clicks"`
 }
 
 func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
@@ -62,32 +64,51 @@ func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
 		RecentClicks: []RecentClick{},
 	}
 
+	// Łączna liczba wyświetleń i kliknięć.
 	err = h.DB.QueryRowContext(
 		r.Context(),
 		`
-		SELECT COUNT(*)
+		SELECT
+			COUNT(*) FILTER (WHERE event_type = 'impression'),
+			COUNT(*) FILTER (WHERE event_type = 'click')
 		FROM events
-		WHERE ad_id = $1 AND event_type = 'click'
+		WHERE ad_id = $1
 		`,
 		adID,
-	).Scan(&result.TotalClicks)
+	).Scan(&result.TotalImpressions, &result.TotalClicks)
 	if err != nil {
-		http.Error(w, "Błąd pobierania liczby kliknięć", http.StatusInternalServerError)
+		http.Error(w, "Błąd pobierania podsumowania statystyk", http.StatusInternalServerError)
 		return
 	}
 
 	var queryErr error
 
+	// Statystyki według wieku.
 	result.ByAgeGroup, queryErr = getClickBreakdown(
 		h.DB,
 		`
 		SELECT
-			COALESCE(user_context->>'age_group', 'Nieznany') AS label,
-			COUNT(*) AS total
-		FROM events
-		WHERE ad_id = $1 AND event_type = 'click'
-		GROUP BY COALESCE(user_context->>'age_group', 'Nieznany')
-		ORDER BY total DESC
+			label,
+			COUNT(*) FILTER (
+				WHERE event_type = 'impression'
+			) AS impressions,
+			COUNT(*) FILTER (
+				WHERE event_type = 'click'
+			) AS clicks
+		FROM (
+			SELECT
+				COALESCE(
+					NULLIF(user_context->>'age_group', ''),
+					NULLIF(user_context->>'age', ''),
+					NULLIF(user_context->>'target_age', ''),
+					'Nieznany'
+				) AS label,
+				event_type
+			FROM events
+			WHERE ad_id = $1
+		) AS age_events
+		GROUP BY label
+		ORDER BY clicks DESC, label
 		`,
 		adID,
 	)
@@ -97,16 +118,30 @@ func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Statystyki według urządzenia.
 	result.ByDevice, queryErr = getClickBreakdown(
 		h.DB,
 		`
 		SELECT
-			COALESCE(user_context->>'device', 'Nieznany') AS label,
-			COUNT(*) AS total
-		FROM events
-		WHERE ad_id = $1 AND event_type = 'click'
-		GROUP BY COALESCE(user_context->>'device', 'Nieznany')
-		ORDER BY total DESC
+			label,
+			COUNT(*) FILTER (
+				WHERE event_type = 'impression'
+			) AS impressions,
+			COUNT(*) FILTER (
+				WHERE event_type = 'click'
+			) AS clicks
+		FROM (
+			SELECT
+				COALESCE(
+					NULLIF(user_context->>'device', ''),
+					'Nieznany'
+				) AS label,
+				event_type
+			FROM events
+			WHERE ad_id = $1
+		) AS device_events
+		GROUP BY label
+		ORDER BY clicks DESC, label
 		`,
 		adID,
 	)
@@ -116,23 +151,38 @@ func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Statystyki według zainteresowań.
 	result.ByInterest, queryErr = getClickBreakdown(
 		h.DB,
 		`
+		WITH interest_events AS (
+			SELECT
+				e.event_type,
+				user_interest.value AS label
+			FROM events e
+			CROSS JOIN LATERAL (
+				SELECT DISTINCT item.value
+				FROM jsonb_array_elements_text(
+					CASE
+						WHEN jsonb_typeof(e.user_context->'interests') = 'array'
+						THEN e.user_context->'interests'
+						ELSE '[]'::jsonb
+					END
+				) AS item(value)
+			) AS user_interest
+			WHERE e.ad_id = $1
+		)
 		SELECT
-			i.value AS label,
-			COUNT(*) AS total
-		FROM events e
-		CROSS JOIN LATERAL jsonb_array_elements_text(
-			CASE
-				WHEN jsonb_typeof(e.user_context->'interests') = 'array'
-				THEN e.user_context->'interests'
-				ELSE '[]'::jsonb
-			END
-		) AS i(value)
-		WHERE e.ad_id = $1 AND e.event_type = 'click'
-		GROUP BY i.value
-		ORDER BY total DESC
+			label,
+			COUNT(*) FILTER (
+				WHERE event_type = 'impression'
+			) AS impressions,
+			COUNT(*) FILTER (
+				WHERE event_type = 'click'
+			) AS clicks
+		FROM interest_events
+		GROUP BY label
+		ORDER BY clicks DESC, label
 		`,
 		adID,
 	)
@@ -142,13 +192,19 @@ func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Historia ostatnich kliknięć.
 	rows, err := h.DB.QueryContext(
 		r.Context(),
 		`
 		SELECT
 			id::text,
 			created_at,
-			COALESCE(user_context->>'age_group', 'Nieznany'),
+			COALESCE(
+				NULLIF(user_context->>'age_group', ''),
+				NULLIF(user_context->>'age', ''),
+				NULLIF(user_context->>'target_age', ''),
+				'Nieznany'
+			),
 			COALESCE(user_context->>'device', 'Nieznany'),
 			CASE
 				WHEN jsonb_typeof(user_context->'interests') = 'array'
@@ -202,7 +258,10 @@ func (h *AdHandler) GetAdClickStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		return
+	}
 }
 
 func getClickBreakdown(
@@ -221,7 +280,11 @@ func getClickBreakdown(
 	for rows.Next() {
 		var item ClickBreakdown
 
-		if err := rows.Scan(&item.Label, &item.Count); err != nil {
+		if err := rows.Scan(
+			&item.Label,
+			&item.Impressions,
+			&item.Clicks,
+		); err != nil {
 			return nil, err
 		}
 

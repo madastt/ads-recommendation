@@ -73,13 +73,6 @@ const validateCampaignDates = (startDate, endDate) => {
     }
 };
 
-const shortenUuid = (id) => {
-    if (!id) return '—';
-    const str = String(id);
-    if (str.length <= 12) return str;
-    return `${str.slice(0, 8)}...`;
-};
-
 const parseAdFeatures = (rawFeatures) => {
     if (!rawFeatures) return null;
     try {
@@ -392,6 +385,22 @@ export default function Dashboard() {
         setSelectedAdForStats(null);
         setAdClickStats(null);
         setAdClickStatsError('');
+    };
+
+    const renderSegmentRows = (items, formatLabel) => {
+        if (!items || items.length === 0) {
+            return <p>Brak danych</p>;
+        }
+
+        return items.map((item) => (
+            <div className="click-stats-row" key={item.label}>
+                <span>{formatLabel(item.label)}</span>
+
+                <strong>
+                    {item.clicks} / {item.impressions}
+                </strong>
+            </div>
+        ));
     };
 
     const handleDeleteAd = async (adId) => {
@@ -774,24 +783,30 @@ export default function Dashboard() {
 
                                 return (
                                     <article className="ad-card" key={ad.id}>
-                                        <div className="ad-preview">
+                                        <button
+                                            type="button"
+                                            className="ad-preview ad-preview-button"
+                                            onClick={() => handleShowAdStats(ad)}
+                                            aria-label={`Otwórz szczegóły reklamy ${ad.id}`}
+                                        >
                                             {ad.image_url && !imageBroken ? (
                                                 <img
-                                                    className="ad-image" src={ad.image_url}
-                                                    alt={`Podgląd reklamy ${ad.id}`} loading="lazy"
+                                                    className="ad-image"
+                                                    src={ad.image_url}
+                                                    alt={`Podgląd reklamy ${ad.id}`}
+                                                    loading="lazy"
                                                     onError={() => setBrokenImages((previous) => ({
                                                         ...previous, [ad.id]: true,
                                                     }))}
                                                 />
                                             ) : (
-                                                <span className="ad-preview-placeholder">Brak podglądu reklamy</span>
+                                                <span className="ad-preview-placeholder">
+                                                Brak podglądu reklamy
+                                            </span>
                                             )}
-                                        </div>
+                                        </button>
                                         <div className="ad-details">
-                                            <div className="ad-meta-row">
-                                                <span className="ad-id" title={`Pełne UUID: ${ad.id}`}>
-                                                    ID: {shortenUuid(ad.id)}
-                                                </span>
+                                            <div className="ad-meta-row ad-card-actions-row">
                                                 <div style={{ display: 'flex', gap: '6px' }}>
                                                     <button
                                                         type="button"
@@ -861,8 +876,8 @@ export default function Dashboard() {
                                             <h3 id="click-stats-title">
                                                 Szczegółowe statystyki kreacji
                                             </h3>
-                                            <span>
-                                                ID: {shortenUuid(selectedAdForStats.id)}
+                                            <span className="click-stats-id">
+                                                ID: {selectedAdForStats.id}
                                             </span>
                                         </div>
 
@@ -887,60 +902,54 @@ export default function Dashboard() {
 
                                     {adClickStats && (
                                         <>
-                                            <div className="click-stats-total">
-                                                <span>Łączna liczba kliknięć</span>
-                                                <strong>{adClickStats.total_clicks}</strong>
+                                            <div className="click-stats-summary">
+                                                <div>
+                                                    <span>Łączna liczba wyświetleń</span>
+                                                    <strong>{adClickStats.total_impressions}</strong>
+                                                </div>
+
+                                                <div>
+                                                    <span>Łączna liczba kliknięć</span>
+                                                    <strong>{adClickStats.total_clicks}</strong>
+                                                </div>
                                             </div>
 
                                             <div className="click-stats-grid">
                                                 <section className="click-stats-panel">
                                                     <h4>Grupa wiekowa</h4>
+                                                    <p className="click-stats-legend">
+                                                        Kliknięcia / wyświetlenia
+                                                    </p>
 
-                                                    {adClickStats.by_age_group.map((item) => (
-                                                        <div className="click-stats-row" key={item.label}>
-                                                            <span>
-                                                                {item.label === 'Nieznany' ? 'Nieznana' : `${item.label} lat`}
-                                                            </span>
-                                                            <strong>{item.count}</strong>
-                                                        </div>
-                                                    ))}
-
-                                                    {adClickStats.by_age_group.length === 0 && (
-                                                        <p>Brak danych</p>
+                                                    {renderSegmentRows(
+                                                        adClickStats.by_age_group,
+                                                        (label) => label === 'Nieznany'
+                                                            ? 'Nieznana'
+                                                            : `${label} lat`
                                                     )}
                                                 </section>
 
                                                 <section className="click-stats-panel">
                                                     <h4>Urządzenie</h4>
+                                                    <p className="click-stats-legend">
+                                                        Kliknięcia / wyświetlenia
+                                                    </p>
 
-                                                    {adClickStats.by_device.map((item) => (
-                                                        <div className="click-stats-row" key={item.label}>
-                                                            <span>
-                                                                {DEVICE_LABELS[item.label] || item.label}
-                                                            </span>
-                                                            <strong>{item.count}</strong>
-                                                        </div>
-                                                    ))}
-
-                                                    {adClickStats.by_device.length === 0 && (
-                                                        <p>Brak danych</p>
+                                                    {renderSegmentRows(
+                                                        adClickStats.by_device,
+                                                        (label) => DEVICE_LABELS[label] || label
                                                     )}
                                                 </section>
 
                                                 <section className="click-stats-panel">
                                                     <h4>Zainteresowania</h4>
+                                                    <p className="click-stats-legend">
+                                                        Kliknięcia / wyświetlenia
+                                                    </p>
 
-                                                    {adClickStats.by_interest.map((item) => (
-                                                        <div className="click-stats-row" key={item.label}>
-                                                            <span>
-                                                                {INTEREST_LABELS[item.label] || item.label}
-                                                            </span>
-                                                            <strong>{item.count}</strong>
-                                                        </div>
-                                                    ))}
-
-                                                    {adClickStats.by_interest.length === 0 && (
-                                                        <p>Brak danych</p>
+                                                    {renderSegmentRows(
+                                                        adClickStats.by_interest,
+                                                        (label) => INTEREST_LABELS[label] || label
                                                     )}
                                                 </section>
                                             </div>
