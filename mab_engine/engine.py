@@ -120,39 +120,92 @@ class LinUCBEngine:
             print(f"[{campaign_id}] LinUCB: Wybrano {selected_ad[:8]}... "
                   f"(UCB: {max_ucb:.4f}, remisujących: {len(best_ads)})")
             return selected_ad
+    def _apply_event_update(self, ad_id, event_type, user_context):
+        x_t = self._context_to_vector(user_context, include_bias=True)
+
+        if event_type == "impression":
+            self.A[ad_id] += np.dot(x_t, x_t.T)
+            return True
+
+        if event_type == "click":
+            self.b[ad_id] += x_t
+            return True
+
+        return False
 
     def update_stats(self, ad_id, event_type, user_context=""):
-        x_t = self._context_to_vector(user_context, include_bias=True)
+        if event_type not in ("impression", "click"):
+            return
 
         with self.lock:
             self._ensure_ad_initialized(ad_id)
 
-            if event_type == "impression":
-                self.A[ad_id] += np.dot(x_t, x_t.T)
-                print(f"[LinUCB] Zaktualizowano macierz A (impression) dla {ad_id[:8]}...")
-            elif event_type == "click":
-                self.b[ad_id] += x_t
-                print(f"[LinUCB] Zaktualizowano wektor nagród b (CLICK) dla {ad_id[:8]}!")
+            updated = self._apply_event_update(
+                ad_id,
+                event_type,
+                user_context
+            )
 
-    def hydrate(self, impressions_map, clicks_map, ad_contexts_map=None):
+        if updated:
+            print(
+                f"[LinUCB] Zaktualizowano model dla reklamy "
+                f"{ad_id[:8]}... ({event_type})"
+            )
+
+    def hydrate(
+            self,
+            ad_contexts_map=None,
+            historical_events=None,
+            replace_all=False
+    ):
         if ad_contexts_map is None:
             ad_contexts_map = {}
 
+        if historical_events is None:
+            historical_events = []
+
         with self.lock:
-            all_ad_ids = (
-                set(impressions_map.keys())
-                | set(clicks_map.keys())
-                | set(ad_contexts_map.keys())
+
+            if replace_all:
+                self.A.clear()
+                self.b.clear()
+                self.warm_started_ads.clear()
+
+            # Inicjalizacja wszystkich reklam i zastosowanie warm-startu.
+            for ad_id, ad_context in ad_contexts_map.items():
+                self._ensure_ad_initialized(
+                    ad_id,
+                    ad_context
+                )
+
+            restored_events = 0
+
+            # Odtworzenie historycznych aktualizacji modelu.
+            for event in historical_events:
+                ad_id = event.get("ad_id")
+                event_type = event.get("event_type")
+                user_context = event.get("user_context") or "{}"
+
+                if not ad_id:
+                    continue
+
+                if event_type not in ("impression", "click"):
+                    continue
+
+                self._ensure_ad_initialized(
+                    ad_id,
+                    ad_contexts_map.get(ad_id)
+                )
+
+                if self._apply_event_update(
+                        ad_id,
+                        event_type,
+                        user_context
+                ):
+                    restored_events += 1
+
+            print(
+                f"[LinUCB] Synchronizacja zakończona. "
+                f"Reklamy: {len(self.A)}, "
+                f"odtworzone zdarzenia: {restored_events}"
             )
-            for ad_id in all_ad_ids:
-                is_new = ad_id not in self.A
-                self._ensure_ad_initialized(ad_id, ad_contexts_map.get(ad_id))
-
-                if is_new:
-                    imp = float(impressions_map.get(ad_id, 0))
-                    clk = float(clicks_map.get(ad_id, 0))
-
-                    self.A[ad_id][0, 0] = 1.0 + imp
-                    self.b[ad_id][0, 0] = clk
-
-            print(f"[LinUCB] Zsynchronizowano stan! Reklamy w pamięci: {len(self.A)}")

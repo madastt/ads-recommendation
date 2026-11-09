@@ -33,14 +33,24 @@ class MabService(mab_pb2_grpc.MabEngineServicer):
         return mab_pb2.EventResponse(success=True)
 
     def SyncState(self, request, context):
+        historical_events = [
+            {
+                "ad_id": event.ad_id,
+                "event_type": event.event_type,
+                "user_context": event.user_context
+            }
+            for event in request.history
+        ]
+
         self.engine.hydrate(
-            impressions_map=request.impressions,
-            clicks_map=request.clicks,
-            ad_contexts_map=request.ad_contexts
+            ad_contexts_map=request.ad_contexts,
+            historical_events=historical_events,
+            replace_all=request.replace_all
         )
+
         return mab_pb2.SyncResponse(
             success=True,
-            message="Pamięć algorytmu LinUCB została pomyślnie zsynchronizowana"
+            message="Stan modelu LinUCB został odtworzony z historii zdarzeń"
         )
 
 

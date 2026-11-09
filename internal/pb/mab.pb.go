@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.36.0
-// source: mab.proto
+// source: internal/pb/mab.proto
 
 package pb
 
@@ -32,7 +32,7 @@ type DecisionRequest struct {
 
 func (x *DecisionRequest) Reset() {
 	*x = DecisionRequest{}
-	mi := &file_mab_proto_msgTypes[0]
+	mi := &file_internal_pb_mab_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *DecisionRequest) String() string {
 func (*DecisionRequest) ProtoMessage() {}
 
 func (x *DecisionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[0]
+	mi := &file_internal_pb_mab_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *DecisionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecisionRequest.ProtoReflect.Descriptor instead.
 func (*DecisionRequest) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{0}
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *DecisionRequest) GetCampaignId() string {
@@ -90,7 +90,7 @@ type DecisionResponse struct {
 
 func (x *DecisionResponse) Reset() {
 	*x = DecisionResponse{}
-	mi := &file_mab_proto_msgTypes[1]
+	mi := &file_internal_pb_mab_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +102,7 @@ func (x *DecisionResponse) String() string {
 func (*DecisionResponse) ProtoMessage() {}
 
 func (x *DecisionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[1]
+	mi := &file_internal_pb_mab_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +115,7 @@ func (x *DecisionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DecisionResponse.ProtoReflect.Descriptor instead.
 func (*DecisionResponse) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{1}
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DecisionResponse) GetSelectedAdId() string {
@@ -137,7 +137,7 @@ type EventRequest struct {
 
 func (x *EventRequest) Reset() {
 	*x = EventRequest{}
-	mi := &file_mab_proto_msgTypes[2]
+	mi := &file_internal_pb_mab_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +149,7 @@ func (x *EventRequest) String() string {
 func (*EventRequest) ProtoMessage() {}
 
 func (x *EventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[2]
+	mi := &file_internal_pb_mab_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,7 +162,7 @@ func (x *EventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventRequest.ProtoReflect.Descriptor instead.
 func (*EventRequest) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{2}
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *EventRequest) GetCampaignId() string {
@@ -202,7 +202,7 @@ type EventResponse struct {
 
 func (x *EventResponse) Reset() {
 	*x = EventResponse{}
-	mi := &file_mab_proto_msgTypes[3]
+	mi := &file_internal_pb_mab_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -214,7 +214,7 @@ func (x *EventResponse) String() string {
 func (*EventResponse) ProtoMessage() {}
 
 func (x *EventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[3]
+	mi := &file_internal_pb_mab_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +227,7 @@ func (x *EventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EventResponse.ProtoReflect.Descriptor instead.
 func (*EventResponse) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{3}
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *EventResponse) GetSuccess() bool {
@@ -239,16 +239,16 @@ func (x *EventResponse) GetSuccess() bool {
 
 type SyncRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Impressions   map[string]int32       `protobuf:"bytes,1,rep,name=impressions,proto3" json:"impressions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Clicks        map[string]int32       `protobuf:"bytes,2,rep,name=clicks,proto3" json:"clicks,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	AdContexts    map[string]string      `protobuf:"bytes,3,rep,name=ad_contexts,json=adContexts,proto3" json:"ad_contexts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	AdContexts    map[string]string      `protobuf:"bytes,1,rep,name=ad_contexts,json=adContexts,proto3" json:"ad_contexts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ReplaceAll    bool                   `protobuf:"varint,2,opt,name=replace_all,json=replaceAll,proto3" json:"replace_all,omitempty"`
+	History       []*EventRequest        `protobuf:"bytes,3,rep,name=history,proto3" json:"history,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SyncRequest) Reset() {
 	*x = SyncRequest{}
-	mi := &file_mab_proto_msgTypes[4]
+	mi := &file_internal_pb_mab_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -260,7 +260,7 @@ func (x *SyncRequest) String() string {
 func (*SyncRequest) ProtoMessage() {}
 
 func (x *SyncRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[4]
+	mi := &file_internal_pb_mab_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -273,26 +273,26 @@ func (x *SyncRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncRequest.ProtoReflect.Descriptor instead.
 func (*SyncRequest) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *SyncRequest) GetImpressions() map[string]int32 {
-	if x != nil {
-		return x.Impressions
-	}
-	return nil
-}
-
-func (x *SyncRequest) GetClicks() map[string]int32 {
-	if x != nil {
-		return x.Clicks
-	}
-	return nil
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SyncRequest) GetAdContexts() map[string]string {
 	if x != nil {
 		return x.AdContexts
+	}
+	return nil
+}
+
+func (x *SyncRequest) GetReplaceAll() bool {
+	if x != nil {
+		return x.ReplaceAll
+	}
+	return false
+}
+
+func (x *SyncRequest) GetHistory() []*EventRequest {
+	if x != nil {
+		return x.History
 	}
 	return nil
 }
@@ -307,7 +307,7 @@ type SyncResponse struct {
 
 func (x *SyncResponse) Reset() {
 	*x = SyncResponse{}
-	mi := &file_mab_proto_msgTypes[5]
+	mi := &file_internal_pb_mab_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -319,7 +319,7 @@ func (x *SyncResponse) String() string {
 func (*SyncResponse) ProtoMessage() {}
 
 func (x *SyncResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mab_proto_msgTypes[5]
+	mi := &file_internal_pb_mab_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -332,7 +332,7 @@ func (x *SyncResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncResponse.ProtoReflect.Descriptor instead.
 func (*SyncResponse) Descriptor() ([]byte, []int) {
-	return file_mab_proto_rawDescGZIP(), []int{5}
+	return file_internal_pb_mab_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SyncResponse) GetSuccess() bool {
@@ -349,11 +349,11 @@ func (x *SyncResponse) GetMessage() string {
 	return ""
 }
 
-var File_mab_proto protoreflect.FileDescriptor
+var File_internal_pb_mab_proto protoreflect.FileDescriptor
 
-const file_mab_proto_rawDesc = "" +
+const file_internal_pb_mab_proto_rawDesc = "" +
 	"\n" +
-	"\tmab.proto\x12\x03mab\"\x7f\n" +
+	"\x15internal/pb/mab.proto\x12\x03mab\"\x7f\n" +
 	"\x0fDecisionRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12!\n" +
@@ -369,18 +369,13 @@ const file_mab_proto_rawDesc = "" +
 	"event_type\x18\x03 \x01(\tR\teventType\x12!\n" +
 	"\fuser_context\x18\x04 \x01(\tR\vuserContext\")\n" +
 	"\rEventResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x85\x03\n" +
-	"\vSyncRequest\x12C\n" +
-	"\vimpressions\x18\x01 \x03(\v2!.mab.SyncRequest.ImpressionsEntryR\vimpressions\x124\n" +
-	"\x06clicks\x18\x02 \x03(\v2\x1c.mab.SyncRequest.ClicksEntryR\x06clicks\x12A\n" +
-	"\vad_contexts\x18\x03 \x03(\v2 .mab.SyncRequest.AdContextsEntryR\n" +
-	"adContexts\x1a>\n" +
-	"\x10ImpressionsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a9\n" +
-	"\vClicksEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\x1a=\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xdd\x01\n" +
+	"\vSyncRequest\x12A\n" +
+	"\vad_contexts\x18\x01 \x03(\v2 .mab.SyncRequest.AdContextsEntryR\n" +
+	"adContexts\x12\x1f\n" +
+	"\vreplace_all\x18\x02 \x01(\bR\n" +
+	"replaceAll\x12+\n" +
+	"\ahistory\x18\x03 \x03(\v2\x11.mab.EventRequestR\ahistory\x1a=\n" +
 	"\x0fAdContextsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"B\n" +
@@ -393,66 +388,63 @@ const file_mab_proto_rawDesc = "" +
 	"\tSyncState\x12\x10.mab.SyncRequest\x1a\x11.mab.SyncResponseB\x11Z\x0fpaw/internal/pbb\x06proto3"
 
 var (
-	file_mab_proto_rawDescOnce sync.Once
-	file_mab_proto_rawDescData []byte
+	file_internal_pb_mab_proto_rawDescOnce sync.Once
+	file_internal_pb_mab_proto_rawDescData []byte
 )
 
-func file_mab_proto_rawDescGZIP() []byte {
-	file_mab_proto_rawDescOnce.Do(func() {
-		file_mab_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_mab_proto_rawDesc), len(file_mab_proto_rawDesc)))
+func file_internal_pb_mab_proto_rawDescGZIP() []byte {
+	file_internal_pb_mab_proto_rawDescOnce.Do(func() {
+		file_internal_pb_mab_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_pb_mab_proto_rawDesc), len(file_internal_pb_mab_proto_rawDesc)))
 	})
-	return file_mab_proto_rawDescData
+	return file_internal_pb_mab_proto_rawDescData
 }
 
-var file_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_mab_proto_goTypes = []any{
+var file_internal_pb_mab_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_internal_pb_mab_proto_goTypes = []any{
 	(*DecisionRequest)(nil),  // 0: mab.DecisionRequest
 	(*DecisionResponse)(nil), // 1: mab.DecisionResponse
 	(*EventRequest)(nil),     // 2: mab.EventRequest
 	(*EventResponse)(nil),    // 3: mab.EventResponse
 	(*SyncRequest)(nil),      // 4: mab.SyncRequest
 	(*SyncResponse)(nil),     // 5: mab.SyncResponse
-	nil,                      // 6: mab.SyncRequest.ImpressionsEntry
-	nil,                      // 7: mab.SyncRequest.ClicksEntry
-	nil,                      // 8: mab.SyncRequest.AdContextsEntry
+	nil,                      // 6: mab.SyncRequest.AdContextsEntry
 }
-var file_mab_proto_depIdxs = []int32{
-	6, // 0: mab.SyncRequest.impressions:type_name -> mab.SyncRequest.ImpressionsEntry
-	7, // 1: mab.SyncRequest.clicks:type_name -> mab.SyncRequest.ClicksEntry
-	8, // 2: mab.SyncRequest.ad_contexts:type_name -> mab.SyncRequest.AdContextsEntry
-	0, // 3: mab.MabEngine.GetNextAd:input_type -> mab.DecisionRequest
-	2, // 4: mab.MabEngine.RecordEvent:input_type -> mab.EventRequest
-	4, // 5: mab.MabEngine.SyncState:input_type -> mab.SyncRequest
-	1, // 6: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
-	3, // 7: mab.MabEngine.RecordEvent:output_type -> mab.EventResponse
-	5, // 8: mab.MabEngine.SyncState:output_type -> mab.SyncResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+var file_internal_pb_mab_proto_depIdxs = []int32{
+	6, // 0: mab.SyncRequest.ad_contexts:type_name -> mab.SyncRequest.AdContextsEntry
+	2, // 1: mab.SyncRequest.history:type_name -> mab.EventRequest
+	0, // 2: mab.MabEngine.GetNextAd:input_type -> mab.DecisionRequest
+	2, // 3: mab.MabEngine.RecordEvent:input_type -> mab.EventRequest
+	4, // 4: mab.MabEngine.SyncState:input_type -> mab.SyncRequest
+	1, // 5: mab.MabEngine.GetNextAd:output_type -> mab.DecisionResponse
+	3, // 6: mab.MabEngine.RecordEvent:output_type -> mab.EventResponse
+	5, // 7: mab.MabEngine.SyncState:output_type -> mab.SyncResponse
+	5, // [5:8] is the sub-list for method output_type
+	2, // [2:5] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_mab_proto_init() }
-func file_mab_proto_init() {
-	if File_mab_proto != nil {
+func init() { file_internal_pb_mab_proto_init() }
+func file_internal_pb_mab_proto_init() {
+	if File_internal_pb_mab_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mab_proto_rawDesc), len(file_mab_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_pb_mab_proto_rawDesc), len(file_internal_pb_mab_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_mab_proto_goTypes,
-		DependencyIndexes: file_mab_proto_depIdxs,
-		MessageInfos:      file_mab_proto_msgTypes,
+		GoTypes:           file_internal_pb_mab_proto_goTypes,
+		DependencyIndexes: file_internal_pb_mab_proto_depIdxs,
+		MessageInfos:      file_internal_pb_mab_proto_msgTypes,
 	}.Build()
-	File_mab_proto = out.File
-	file_mab_proto_goTypes = nil
-	file_mab_proto_depIdxs = nil
+	File_internal_pb_mab_proto = out.File
+	file_internal_pb_mab_proto_goTypes = nil
+	file_internal_pb_mab_proto_depIdxs = nil
 }

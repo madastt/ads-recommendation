@@ -61,7 +61,36 @@ func main() {
 
 	mabClient := pb.NewMabEngineClient(mabConn)
 
-	hydrateMABState(db, mabClient)
+	const maxSyncAttempts = 10
+
+	var syncErr error
+
+	for attempt := 1; attempt <= maxSyncAttempts; attempt++ {
+		syncErr = hydrateMABState(db, mabClient)
+
+		if syncErr == nil {
+			break
+		}
+
+		log.Printf(
+			"Synchronizacja MAB nie powiodła się (próba %d/%d): %v",
+			attempt,
+			maxSyncAttempts,
+			syncErr,
+		)
+
+		if attempt < maxSyncAttempts {
+			time.Sleep(time.Second)
+		}
+	}
+
+	if syncErr != nil {
+		log.Fatalf(
+			"Nie udało się zsynchronizować modelu po %d próbach: %v",
+			maxSyncAttempts,
+			syncErr,
+		)
+	}
 
 	r := chi.NewRouter()
 
@@ -134,66 +163,149 @@ func main() {
 	}
 }
 
-func hydrateMABState(db *sql.DB, client pb.MabEngineClient) {
+func hydrateMABState(db *sql.DB, client pb.MabEngineClient) error {
 	log.Println("Rozpoczynanie synchronizacji stanu z silnikiem MAB...")
 
-	impressions := make(map[string]int32)
-	clicks := make(map[string]int32)
 	adContexts := make(map[string]string)
 
-	// Pobranie cech kontekstowych wszystkich reklam
-	adRows, err := db.Query(`SELECT id, COALESCE(context_features::text, '{}') FROM ads`)
+	// 1. Pobranie kontekstów wszystkich reklam.
+	adRows, err := db.Query(`
+        SELECT id, COALESCE(context_features::text, '{}')
+        FROM ads
+    `)
 	if err != nil {
-		log.Printf("Błąd pobierania kontekstów reklam do synchronizacji: %v", err)
-		return
+		return fmt.Errorf("błąd pobierania kontekstów reklam: %w", err)
 	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
-	}(adRows)
+	defer adRows.Close()
 
 	for adRows.Next() {
-		var adID, ctxFeatures string
-		if err := adRows.Scan(&adID, &ctxFeatures); err == nil {
-			adContexts[adID] = ctxFeatures
+		var adID, contextFeatures string
+
+		if err := adRows.Scan(&adID, &contextFeatures); err != nil {
+			return fmt.Errorf("błąd odczytu kontekstu reklamy: %w", err)
 		}
+
+		adContexts[adID] = contextFeatures
 	}
 
-	// Pobranie historycznych wyświetleń i kliknięć
-	query := `SELECT ad_id, event_type, COUNT(*) FROM events GROUP BY ad_id, event_type`
-	rows, err := db.Query(query)
+	if err := adRows.Err(); err != nil {
+		return fmt.Errorf("błąd iterowania po reklamach: %w", err)
+	}
+
+	// 2. Wyczyszczenie modelu i inicjalizacja reklam.
+	if err := syncMABState(client, &pb.SyncRequest{
+		AdContexts: adContexts,
+		ReplaceAll: true,
+	}); err != nil {
+		return fmt.Errorf("błąd inicjalizacji modelu: %w", err)
+	}
+
+	// 3. Pobranie historii zdarzeń wraz z kontekstem użytkownika.
+	eventRows, err := db.Query(`
+        SELECT
+            ad_id,
+            event_type,
+            COALESCE(user_context::text, '{}')
+        FROM events
+        ORDER BY created_at ASC, id ASC
+    `)
 	if err != nil {
-		log.Printf("Błąd pobierania statystyk do synchronizacji: %v", err)
-		return
+		return fmt.Errorf("błąd pobierania historii zdarzeń: %w", err)
 	}
-	defer func(rows *sql.Rows) {
-		_ = rows.Close()
-	}(rows)
+	defer eventRows.Close()
 
-	for rows.Next() {
-		var adID, eventType string
-		var count int32
-		if err := rows.Scan(&adID, &eventType, &count); err != nil {
-			continue
+	const batchSize = 500
+
+	batch := make([]*pb.EventRequest, 0, batchSize)
+	restoredEvents := 0
+
+	// 4. Wysyłanie zdarzeń do Pythona partiami.
+	flushBatch := func() error {
+		if len(batch) == 0 {
+			return nil
 		}
-		if eventType == "impression" {
-			impressions[adID] = count
-		} else if eventType == "click" {
-			clicks[adID] = count
+
+		err := syncMABState(client, &pb.SyncRequest{
+			History: batch,
+		})
+		if err != nil {
+			return err
+		}
+
+		restoredEvents += len(batch)
+		batch = make([]*pb.EventRequest, 0, batchSize)
+
+		return nil
+	}
+
+	for eventRows.Next() {
+		var adID, eventType, userContext string
+
+		if err := eventRows.Scan(
+			&adID,
+			&eventType,
+			&userContext,
+		); err != nil {
+			return fmt.Errorf("błąd odczytu zdarzenia: %w", err)
+		}
+
+		batch = append(batch, &pb.EventRequest{
+			AdId:        adID,
+			EventType:   eventType,
+			UserContext: userContext,
+		})
+
+		if len(batch) >= batchSize {
+			if err := flushBatch(); err != nil {
+				return fmt.Errorf(
+					"błąd synchronizacji partii zdarzeń: %w",
+					err,
+				)
+			}
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	if err := eventRows.Err(); err != nil {
+		return fmt.Errorf("błąd iterowania po historii zdarzeń: %w", err)
+	}
+
+	if err := flushBatch(); err != nil {
+		return fmt.Errorf(
+			"błąd synchronizacji ostatniej partii: %w",
+			err,
+		)
+	}
+
+	log.Printf(
+		"Zsynchronizowano model LinUCB: %d reklam, %d zdarzeń",
+		len(adContexts),
+		restoredEvents,
+	)
+
+	return nil
+}
+
+func syncMABState(
+	client pb.MabEngineClient,
+	request *pb.SyncRequest,
+) error {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		15*time.Second,
+	)
 	defer cancel()
 
-	resp, err := client.SyncState(ctx, &pb.SyncRequest{
-		Impressions: impressions,
-		Clicks:      clicks,
-		AdContexts:  adContexts,
-	})
-
+	response, err := client.SyncState(ctx, request)
 	if err != nil {
-		log.Printf("Silnik MAB jest niedostępny. Uruchomi się z pustą pamięcią RAM (Błąd: %v)", err)
-	} else {
-		log.Printf("Pomyślnie zsynchronizowano AI z bazą PostgreSQL! Odpowiedź Pythona: %s", resp.Message)
+		return err
 	}
+
+	if !response.GetSuccess() {
+		return fmt.Errorf(
+			"silnik MAB odrzucił synchronizację: %s",
+			response.GetMessage(),
+		)
+	}
+
+	return nil
 }
