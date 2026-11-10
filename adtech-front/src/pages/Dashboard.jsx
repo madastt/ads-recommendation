@@ -113,13 +113,12 @@ export default function Dashboard() {
     const [isDraggingFile, setIsDraggingFile] = useState(false);
 
     const [adFormState, setAdFormState] = useState({
-        target_age: '18-25',
-        device: 'desktop',
+        target_age: ['18-25'],
+        device: ['desktop'],
         interests: ['electronics'],
         image: null,
         previewUrl: '',
     });
-
     const [editingCampaign, setEditingCampaign] = useState(null);
 
     const selectedCampaignId = selectedCampaign?.id;
@@ -277,13 +276,18 @@ export default function Dashboard() {
         });
     };
 
-    const toggleInterest = (interestValue) => {
+    const toggleAdFormOption = (field, value) => {
         setAdFormState((prev) => {
-            const exists = prev.interests.includes(interestValue);
+            const exists = prev[field].includes(value);
+
             const updated = exists
-                ? prev.interests.filter((item) => item !== interestValue)
-                : [...prev.interests, interestValue];
-            return { ...prev, interests: updated };
+                ? prev[field].filter((item) => item !== value)
+                : [...prev[field], value];
+
+            return {
+                ...prev,
+                [field]: updated,
+            };
         });
     };
 
@@ -699,19 +703,24 @@ export default function Dashboard() {
                                     <label>Wstępne cechy kontekstowe kreacji</label>
                                     <div className="features-grid">
                                         <div className="feature-group">
-                                            <span className="feature-group-title">Docelowa grupa wiekowa</span>
+                                            <span className="feature-group-title">
+                                                Docelowa grupa wiekowa
+                                            </span>
+
                                             <div className="choice-pills">
                                                 {AGE_GROUPS.map((age) => (
                                                     <label
                                                         key={age}
-                                                        className={`choice-pill ${adFormState.target_age === age ? 'is-checked' : ''}`}
+                                                        className={`choice-pill ${
+                                                            adFormState.target_age.includes(age) ? 'is-checked' : ''
+                                                        }`}
                                                     >
                                                         <input
-                                                            type="radio"
+                                                            type="checkbox"
                                                             name="target_age"
                                                             value={age}
-                                                            checked={adFormState.target_age === age}
-                                                            onChange={() => setAdFormState((prev) => ({ ...prev, target_age: age }))}
+                                                            checked={adFormState.target_age.includes(age)}
+                                                            onChange={() => toggleAdFormOption('target_age', age)}
                                                         />
                                                         <span>{age} lat</span>
                                                     </label>
@@ -720,19 +729,24 @@ export default function Dashboard() {
                                         </div>
 
                                         <div className="feature-group">
-                                            <span className="feature-group-title">Docelowe urządzenie</span>
+                                            <span className="feature-group-title">
+                                                Docelowe urządzenie
+                                            </span>
+
                                             <div className="choice-pills">
                                                 {DEVICES.map((dev) => (
                                                     <label
                                                         key={dev.value}
-                                                        className={`choice-pill ${adFormState.device === dev.value ? 'is-checked' : ''}`}
+                                                        className={`choice-pill ${
+                                                            adFormState.device.includes(dev.value) ? 'is-checked' : ''
+                                                        }`}
                                                     >
                                                         <input
-                                                            type="radio"
+                                                            type="checkbox"
                                                             name="device"
                                                             value={dev.value}
-                                                            checked={adFormState.device === dev.value}
-                                                            onChange={() => setAdFormState((prev) => ({ ...prev, device: dev.value }))}
+                                                            checked={adFormState.device.includes(dev.value)}
+                                                            onChange={() => toggleAdFormOption('device', dev.value)}
                                                         />
                                                         <span>{dev.label}</span>
                                                     </label>
@@ -754,7 +768,7 @@ export default function Dashboard() {
                                                                 type="checkbox"
                                                                 value={cat.value}
                                                                 checked={checked}
-                                                                onChange={() => toggleInterest(cat.value)}
+                                                                onChange={() => toggleAdFormOption('interests', cat.value)}
                                                             />
                                                             <span>{cat.label}</span>
                                                         </label>
@@ -825,10 +839,21 @@ export default function Dashboard() {
                                             {parsedFeatures && (
                                                 <div className="ad-feature-badges">
                                                     {parsedFeatures.target_age && (
-                                                        <span className="ad-badge">Wiek: {parsedFeatures.target_age}</span>
+                                                        <span className="ad-badge">
+                                                            Wiek: {Array.isArray(parsedFeatures.target_age)
+                                                                ? parsedFeatures.target_age.join(', ')
+                                                                : parsedFeatures.target_age}
+                                                        </span>
                                                     )}
+
                                                     {parsedFeatures.device && (
-                                                        <span className="ad-badge">Urządzenie: {parsedFeatures.device}</span>
+                                                        <span className="ad-badge">
+                                                            Urządzenie: {Array.isArray(parsedFeatures.device)
+                                                                ? parsedFeatures.device
+                                                                    .map((device) => DEVICE_LABELS[device] || device)
+                                                                    .join(', ')
+                                                            : DEVICE_LABELS[parsedFeatures.device] || parsedFeatures.device}
+                                                        </span>
                                                     )}
                                                     {Array.isArray(parsedFeatures.interests) && parsedFeatures.interests.map((intItem) => (
                                                         <span key={intItem} className="ad-badge ad-badge-muted">
